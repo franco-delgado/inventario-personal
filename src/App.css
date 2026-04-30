@@ -1,0 +1,28 @@
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8); /* Fondo oscuro */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.modal-content {
+  background-color: #242424; /* O el color de tu fondo */
+  padding: 30px;
+  border-radius: 15px;
+  border: 1px solid #646cff;
+  width: 85%;
+  max-width: 400px;
+  text-align: left;
+}
+
+.btn-cerrar {
+  margin-top: 20px;
+  width: 100%;
+  background-color: #ff4646;
+}
