@@ -7,36 +7,51 @@ import "./App.css";
 function Scanner({ onScanSuccess, onClose }) {
   useEffect(() => {
     const scanner = new Html5QrcodeScanner("reader", {
-      fps: 10,
-      qrbox: { width: 250, height: 150 },
+      fps: 30, // Máxima velocidad para detección instantánea
+      qrbox: { width: 300, height: 150 }, // Caja rectangular, ideal para barras
+      aspectRatio: 1.0,
+      experimentalFeatures: {
+        useBarCodeDetectorIfSupported: true,
+      },
+      formatsToSupport: [
+        6,  // EAN_13
+        7,  // EAN_8
+        12, // CODE_128
+        8,  // CODE_39
+      ],
     });
 
     scanner.render(
       (text) => {
+        console.log("Código detectado:", text);
         onScanSuccess(text);
-        scanner.clear();
+        scanner.clear(); 
       },
-      (err) => {
-        /* Errores de lectura ignorados */
-      },
+      (err) => { /* Errores de lectura ignorados */ }
     );
 
     return () => {
-      scanner
-        .clear()
-        .catch((error) => console.error("Error al limpiar scanner", error));
+      scanner.clear().catch((error) => console.error("Error al limpiar", error));
     };
   }, [onScanSuccess]);
 
   return (
     <div className="modal-overlay">
-      <div className="modal-content">
-        <h3>Escaneando Código...</h3>
-        <div id="reader"></div>
+      <div className="modal-content" style={{ maxWidth: "500px", width: "90%" }}>
+        <h3 style={{ marginBottom: "10px" }}>Escaneando Automáticamente...</h3>
+        <p style={{ fontSize: "13px", color: "#555", marginBottom: "15px" }}>
+          Ubique las barras dentro del recuadro blanco.
+        </p>
+        <div id="reader" style={{ width: "100%" }}></div>
         <button
           className="btn-cerrar"
           onClick={onClose}
-          style={{ marginTop: "10px" }}
+          style={{
+            marginTop: "20px",
+            width: "100%",
+            padding: "10px",
+            backgroundColor: "#333",
+          }}
         >
           CANCELAR
         </button>
@@ -46,264 +61,174 @@ function Scanner({ onScanSuccess, onClose }) {
 }
 
 function App() {
-  // --- ESTADOS ---
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState(null);
   const [busqueda, setBusqueda] = useState("");
+  const [resultadosBusqueda, setResultadosBusqueda] = useState([]);
   const [productoSeleccionado, setProductoSeleccionado] = useState(null);
-  const [mostrandoFormularioNuevo, setMostrandoFormularioNuevo] =
-    useState(false);
-
-  // Estados para Escáner
+  const [mostrandoFormularioNuevo, setMostrandoFormularioNuevo] = useState(false);
   const [scaneando, setScaneando] = useState(false);
-  const [inputDestino, setInputDestino] = useState(""); // "busqueda" o "nuevo"
+  const [inputDestino, setInputDestino] = useState("");
 
-  // Estado para Nuevo Producto
   const [nuevoProducto, setNuevoProducto] = useState({
     cb: "",
-    id: "",
+    registro: "",
     nombre: "",
     contenido: "",
-    stock: 0,
+    stock: "",
     fechaVto: "",
   });
 
-  const categorias = [
-    "CAPILARES",
-    "FEMENINAS",
-    "DESODORANTES",
-    "COLORACION",
-    "HELADERAS",
-    "BUCALES",
-  ];
+  const categorias = ["CAPILARES", "FEMENINAS", "DESODORANTES", "COLORACION", "HELADERAS", "BUCALES"];
+
+  // --- BÚSQUEDA DINÁMICA ---
+  useEffect(() => {
+    const buscarEnSupabase = async () => {
+      if (busqueda.trim().length === 0) {
+        setResultadosBusqueda([]);
+        return;
+      }
+      try {
+        const { data, error } = await supabase
+          .from("productos-farmacia")
+          .select("*")
+          .ilike("nombre", `%${busqueda}%`)
+          .eq("categoria", categoriaSeleccionada);
+
+        if (error) throw error;
+        setResultadosBusqueda(data || []);
+      } catch (err) {
+        console.error("Error buscando:", err.message);
+      }
+    };
+
+    const timer = setTimeout(() => buscarEnSupabase(), 400);
+    return () => clearTimeout(timer);
+  }, [busqueda, categoriaSeleccionada]);
 
   // --- LÓGICA DE ESCANEO ---
   const handleScanSuccess = (codigo) => {
     if (inputDestino === "busqueda") {
       setBusqueda(codigo);
     } else if (inputDestino === "nuevo") {
-      setNuevoProducto({ ...nuevoProducto, cb: codigo });
+      setNuevoProducto((prev) => ({ ...prev, cb: codigo }));
     }
     setScaneando(false);
+    alert("Código leído: " + codigo);
   };
 
-  // --- GUARDAR EN SUPABASE ---
+  // --- ELIMINAR ---
+  const handleEliminar = async (id, e) => {
+    e.stopPropagation();
+    if (!window.confirm("¿Deseas eliminar este producto?")) return;
+    try {
+      const { error } = await supabase.from("productos-farmacia").delete().eq("id", id);
+      if (error) throw error;
+      alert("Eliminado con éxito");
+      setResultadosBusqueda(resultadosBusqueda.filter((p) => p.id !== id));
+    } catch (error) {
+      alert("Error al eliminar: " + error.message);
+    }
+  };
+
+  // --- GUARDAR ---
   const handleGuardar = async () => {
     if (!nuevoProducto.cb || !nuevoProducto.nombre) {
-      alert("Faltan datos críticos (CB y Nombre)");
+      alert("CB y Nombre son obligatorios");
       return;
     }
 
+    const datosAEnviar = {
+      cb: String(nuevoProducto.cb).trim(),
+      nombre: nuevoProducto.nombre.toUpperCase().trim(),
+      categoria: categoriaSeleccionada,
+      stock: parseInt(nuevoProducto.stock) || 0,
+      registro: nuevoProducto.registro || null,
+      contenido: nuevoProducto.contenido || null,
+      fechaVto: nuevoProducto.fechaVto || null,
+    };
+
     try {
-      const { error } = await supabase.from("productos-farmacia").insert([
-        {
-          cb: nuevoProducto.cb,
-          id: nuevoProducto.id,
-          nombre: nuevoProducto.nombre.toUpperCase(),
-          contenido: nuevoProducto.contenido,
-          stock: parseInt(nuevoProducto.stock),
-          fechaVto: nuevoProducto.fechaVto,
-          categoria: categoriaSeleccionada,
-        },
-      ]);
-
+      const { error } = await supabase.from("productos-farmacia").insert([datosAEnviar]);
       if (error) throw error;
-
-      alert("¡Producto guardado en Supabase!");
-      setNuevoProducto({
-        cb: "",
-        id: "",
-        nombre: "",
-        contenido: "",
-        stock: 0,
-        fechaVto: "",
-      });
+      alert("¡Producto guardado!");
+      setNuevoProducto({ cb: "", registro: "", nombre: "", contenido: "", stock: "", fechaVto: "" });
       setMostrandoFormularioNuevo(false);
+      setBusqueda("");
     } catch (error) {
       alert("Error al guardar: " + error.message);
     }
   };
 
-  // --- MODAL DETALLE ---
   const renderDetalleProducto = () => {
     if (!productoSeleccionado) return null;
     return (
       <div className="modal-overlay">
         <div className="modal-content">
-          <h2>Detalle del Producto</h2>
+          <h2>Detalle</h2>
           <hr />
-          <p>
-            <strong>CB:</strong> {productoSeleccionado.cb}
-          </p>
-          <p>
-            <strong>Nombre:</strong> {productoSeleccionado.nombre}
-          </p>
-          <p>
-            <strong>Stock:</strong> {productoSeleccionado.stock}
-          </p>
-          <button
-            className="btn-cerrar"
-            onClick={() => setProductoSeleccionado(null)}
-          >
-            CERRAR
-          </button>
+          <p><strong>CB:</strong> {productoSeleccionado.cb}</p>
+          <p><strong>Nombre:</strong> {productoSeleccionado.nombre}</p>
+          <p><strong>Stock:</strong> {productoSeleccionado.stock}</p>
+          <p><strong>Vto:</strong> {productoSeleccionado.fechaVto || "N/A"}</p>
+          <button className="btn-cerrar" onClick={() => setProductoSeleccionado(null)}>CERRAR</button>
         </div>
       </div>
     );
   };
 
-  // --- PANTALLA 2: PRODUCTOS ---
   if (categoriaSeleccionada) {
     return (
       <div className="content-principal">
         {renderDetalleProducto()}
-        {scaneando && (
-          <Scanner
-            onScanSuccess={handleScanSuccess}
-            onClose={() => setScaneando(false)}
-          />
-        )}
-
-        <button
-          onClick={() => {
-            setCategoriaSeleccionada(null);
-            setBusqueda("");
-            setMostrandoFormularioNuevo(false);
-          }}
-          style={{ marginBottom: "20px" }}
-        >
+        {scaneando && <Scanner onScanSuccess={handleScanSuccess} onClose={() => setScaneando(false)} />}
+        
+        <button onClick={() => { setCategoriaSeleccionada(null); setBusqueda(""); }}>
           ← Volver atrás
         </button>
 
-        <h1>Sección: {categoriaSeleccionada}</h1>
+        <h1>{categoriaSeleccionada}</h1>
 
         {!mostrandoFormularioNuevo ? (
           <div className="pantalla-productos">
-            <div
-              className="content-input"
-              style={{ display: "flex", gap: "10px", justifyContent: "center" }}
-            >
+            <div className="content-input" style={{ display: "flex", gap: "10px" }}>
               <input
                 className="buscador"
                 placeholder="BUSCAR PRODUCTO..."
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
               />
-              <button
-                onClick={() => {
-                  setScaneando(true);
-                  setInputDestino("busqueda");
-                }}
-                style={{ fontSize: "20px" }}
-              >
-                📸
-              </button>
+              <button onClick={() => { setScaneando(true); setInputDestino("busqueda"); }}>📸</button>
             </div>
 
-            {busqueda.length > 0 && (
-              <div className="opciones-productos">
-                <button
-                  onClick={() =>
-                    setProductoSeleccionado({
-                      cb: busqueda,
-                      nombre: "RESULTADO DE BUSQUEDA",
-                      stock: 5,
-                    })
-                  }
-                >
-                  VER: {busqueda}
-                </button>
-              </div>
-            )}
-
-            <div style={{ marginTop: "40px" }}>
-              <p>¿No encuentras el producto?</p>
-              <button
-                className="btn-nuevo"
-                onClick={() => setMostrandoFormularioNuevo(true)}
-              >
-                + AGREGAR NUEVO PRODUCTO
-              </button>
+            <div className="lista-resultados" style={{ marginTop: "20px" }}>
+              {resultadosBusqueda.map((prod) => (
+                <div key={prod.id} style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
+                  <button className="btn-resultado" style={{ flex: 1, textAlign: "left", padding: "12px" }} onClick={() => setProductoSeleccionado(prod)}>
+                    <strong>{prod.nombre}</strong> <br />
+                    <small>Stock: {prod.stock} | CB: {prod.cb}</small>
+                  </button>
+                  <button onClick={(e) => handleEliminar(prod.id, e)} style={{ backgroundColor: "#ff4d4d", color: "white", border: "none", borderRadius: "5px", padding: "0 15px", cursor: "pointer" }}>🗑️</button>
+                </div>
+              ))}
             </div>
+            <button className="btn-nuevo" onClick={() => setMostrandoFormularioNuevo(true)} style={{ marginTop: "20px" }}>+ AGREGAR NUEVO</button>
           </div>
         ) : (
-          /* FORMULARIO PARA NUEVO PRODUCTO */
           <div className="formulario-nuevo">
-            <h3>Registrar en {categoriaSeleccionada}</h3>
+            <h3>Registrar</h3>
             <div className="inputs-registro">
               <div style={{ display: "flex", gap: "5px" }}>
-                <input
-                  type="text"
-                  placeholder="Código de Barras (CB)"
-                  value={nuevoProducto.cb}
-                  onChange={(e) =>
-                    setNuevoProducto({ ...nuevoProducto, cb: e.target.value })
-                  }
-                />
-                <button
-                  onClick={() => {
-                    setScaneando(true);
-                    setInputDestino("nuevo");
-                  }}
-                >
-                  📸
-                </button>
+                <input placeholder="Código de Barras" value={nuevoProducto.cb} onChange={(e) => setNuevoProducto({ ...nuevoProducto, cb: e.target.value })} />
+                <button onClick={() => { setScaneando(true); setInputDestino("nuevo"); }}>📸</button>
               </div>
-              <input
-                type="text"
-                placeholder="ID / Registro"
-                value={nuevoProducto.id}
-                onChange={(e) =>
-                  setNuevoProducto({ ...nuevoProducto, id: e.target.value })
-                }
-              />
-              <input
-                type="text"
-                placeholder="Nombre del producto"
-                value={nuevoProducto.nombre}
-                onChange={(e) =>
-                  setNuevoProducto({ ...nuevoProducto, nombre: e.target.value })
-                }
-              />
-              <input
-                type="text"
-                placeholder="Contenido"
-                value={nuevoProducto.contenido}
-                onChange={(e) =>
-                  setNuevoProducto({
-                    ...nuevoProducto,
-                    contenido: e.target.value,
-                  })
-                }
-              />
-              <input
-                type="number"
-                placeholder="Stock inicial"
-                value={nuevoProducto.stock}
-                onChange={(e) =>
-                  setNuevoProducto({ ...nuevoProducto, stock: e.target.value })
-                }
-              />
-              <input
-                type="date"
-                value={nuevoProducto.fechaVto}
-                onChange={(e) =>
-                  setNuevoProducto({
-                    ...nuevoProducto,
-                    fechaVto: e.target.value,
-                  })
-                }
-              />
+              <input placeholder="Nombre" value={nuevoProducto.nombre} onChange={(e) => setNuevoProducto({ ...nuevoProducto, nombre: e.target.value })} />
+              <input placeholder="Contenido" value={nuevoProducto.contenido} onChange={(e) => setNuevoProducto({ ...nuevoProducto, contenido: e.target.value })} />
+              <input placeholder="Stock" type="number" value={nuevoProducto.stock} onChange={(e) => setNuevoProducto({ ...nuevoProducto, stock: e.target.value })} />
+              <input type="date" value={nuevoProducto.fechaVto} onChange={(e) => setNuevoProducto({ ...nuevoProducto, fechaVto: e.target.value })} />
             </div>
             <div className="botones-acciones">
-              <button className="btn-guardar" onClick={handleGuardar}>
-                GUARDAR EN SUPABASE
-              </button>
-              <button
-                className="btn-cancelar"
-                onClick={() => setMostrandoFormularioNuevo(false)}
-              >
-                CANCELAR
-              </button>
+              <button className="btn-guardar" onClick={handleGuardar}>GUARDAR</button>
+              <button className="btn-cancelar" onClick={() => setMostrandoFormularioNuevo(false)}>CANCELAR</button>
             </div>
           </div>
         )}
@@ -311,20 +236,12 @@ function App() {
     );
   }
 
-  // --- PANTALLA 1: MENÚ PRINCIPAL ---
   return (
     <div className="content-principal">
       <h1>Inventario Farmacia</h1>
       <div className="content-categorias">
         {categorias.map((cat) => (
-          <div className="categoria" key={cat}>
-            <button
-              className="btn-categoria"
-              onClick={() => setCategoriaSeleccionada(cat)}
-            >
-              {cat}
-            </button>
-          </div>
+          <button key={cat} className="btn-categoria" onClick={() => setCategoriaSeleccionada(cat)}>{cat}</button>
         ))}
       </div>
     </div>
