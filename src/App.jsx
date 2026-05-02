@@ -18,7 +18,7 @@ function App() {
     useState(false);
   const [scaneando, setScaneando] = useState(false);
   const [inputDestino, setInputDestino] = useState("");
-
+  const [codigoEscaneado, setCodigoEscaneado] = useState("");
   // Eliminamos el estado 'nuevoProducto' de aquí porque ahora vive dentro de FormularioNuevo
 
   const categorias = [
@@ -64,9 +64,10 @@ function App() {
     if (inputDestino === "busqueda") {
       setBusqueda({ nombre: "", cb: codigo, registro: "" });
     } else {
+      setCodigoEscaneado(codigo);
       // Este evento se manejará a través de la prop que reciba el componente Formulario si es necesario,
       // pero por ahora lo mantenemos simple para que funcione con tu lógica de 'inputDestino'
-      window.dispatchEvent(new CustomEvent("scan-nuevo", { detail: codigo }));
+      //  window.dispatchEvent(new CustomEvent("scan-nuevo", { detail: codigo }));
     }
     setScaneando(false);
   };
@@ -195,6 +196,7 @@ function App() {
           onAbrirScanner={() => {
             setScaneando(true);
             setInputDestino("nuevo");
+            setCodigoEscaneado(""); // Limpiar el código escaneado antes de abrir el scanner
           }}
         />
       )}

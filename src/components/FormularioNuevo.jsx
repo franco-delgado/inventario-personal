@@ -1,6 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-export function FormularioNuevo({ onGuardar, onCancelar, onAbrirScanner }) {
+export function FormularioNuevo({
+  onGuardar,
+  onCancelar,
+  onAbrirScanner,
+  codigoEscaneado,
+}) {
   const [producto, setProducto] = useState({
     cb: "",
     registro: "",
@@ -9,6 +14,13 @@ export function FormularioNuevo({ onGuardar, onCancelar, onAbrirScanner }) {
     stock: "",
     fechaVto: "",
   });
+
+  // Este efecto detecta cuando llega un código desde el Scanner en el padre
+  useEffect(() => {
+    if (codigoDesdeScanner) {
+      setProducto((prev) => ({ ...prev, cb: codigoDesdeScanner }));
+    }
+  }, [codigoDesdeScanner]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
