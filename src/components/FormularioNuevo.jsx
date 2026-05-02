@@ -17,10 +17,10 @@ export function FormularioNuevo({
 
   // Este efecto detecta cuando llega un código desde el Scanner en el padre
   useEffect(() => {
-    if (codigoDesdeScanner) {
-      setProducto((prev) => ({ ...prev, cb: codigoDesdeScanner }));
+    if (codigoEscaneado) {
+      setProducto((prev) => ({ ...prev, cb: codigoEscaneado }));
     }
-  }, [codigoDesdeScanner]);
+  }, [codigoEscaneado]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
