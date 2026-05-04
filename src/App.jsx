@@ -19,6 +19,7 @@ function App() {
   const [scaneando, setScaneando] = useState(false);
   const [inputDestino, setInputDestino] = useState("");
   const [codigoEscaneado, setCodigoEscaneado] = useState("");
+  const [productosRelacionados, setProductosRelacionados] = useState([]);
   // Eliminamos el estado 'nuevoProducto' de aquí porque ahora vive dentro de FormularioNuevo
 
   const categorias = [
@@ -31,30 +32,31 @@ function App() {
   ];
 
   // --- BÚSQUEDA ---
-  useEffect(() => {
-    const buscarEnSupabase = async () => {
-      if (!busqueda.nombre && !busqueda.cb && !busqueda.registro) {
-        setResultadosBusqueda([]);
-        return;
-      }
-      try {
-        let query = supabase
-          .from("productos-farmacia")
-          .select("*")
-          .eq("categoria", categoriaSeleccionada);
-        if (busqueda.nombre)
-          query = query.ilike("nombre", `%${busqueda.nombre}%`);
-        if (busqueda.cb) query = query.eq("cb", busqueda.cb);
-        if (busqueda.registro)
-          query = query.ilike("registro", `%${busqueda.registro}%`);
+  const buscarEnSupabase = async () => {
+    if (!busqueda.nombre && !busqueda.cb && !busqueda.registro) {
+      setResultadosBusqueda([]);
+      return;
+    }
+    try {
+      let query = supabase
+        .from("productos-farmacia")
+        .select("*")
+        .eq("categoria", categoriaSeleccionada);
+      if (busqueda.nombre)
+        query = query.ilike("nombre", `%${busqueda.nombre}%`);
+      if (busqueda.cb) query = query.eq("cb", busqueda.cb);
+      if (busqueda.registro)
+        query = query.ilike("registro", `%${busqueda.registro}%`);
 
-        const { data, error } = await query;
-        if (error) throw error;
-        setResultadosBusqueda(data || []);
-      } catch (err) {
-        console.error(err.message);
-      }
-    };
+      const { data, error } = await query;
+      if (error) throw error;
+      setResultadosBusqueda(data || []);
+    } catch (err) {
+      console.error(err.message);
+    }
+  };
+  // 2. El useEffect ahora solo se encarga de disparar la búsqueda con el timer
+  useEffect(() => {
     const timer = setTimeout(buscarEnSupabase, 400);
     return () => clearTimeout(timer);
   }, [busqueda, categoriaSeleccionada]);
@@ -116,6 +118,11 @@ function App() {
       <DetalleProducto
         producto={productoSeleccionado}
         onClose={() => setProductoSeleccionado(null)}
+        todosLosProductos={resultadosBusqueda} // <--- ¡Asegúrate de que esta variable tenga datos!
+        onActualizar={buscarEnSupabase} // <-- Esto hará que la lista se actualice sola al editar/borrar
+        lista
+        completa
+        aquí
       />
 
       {scaneando && (
@@ -175,7 +182,17 @@ function App() {
               <button
                 key={prod.id}
                 className="btn-resultado"
-                onClick={() => setProductoSeleccionado(prod)}
+                onClick={() => {
+                  // 1. Seteamos el producto principal para el detalle
+                  setProductoSeleccionado(prod);
+                  // 2. Lógica para encontrar similares:
+                  // Tomamos las primeras dos palabras (ej: "ELVIVE KERA") para que la búsqueda sea precisa
+                  const palabrasNombre = prod.nombre.split(" ");
+                  const baseBusqueda = palabrasNombre
+                    .slice(0, 2)
+                    .join(" ")
+                    .toLowerCase();
+                }}
               >
                 {prod.nombre} - Reg: {prod.registro || "N/A"}
               </button>

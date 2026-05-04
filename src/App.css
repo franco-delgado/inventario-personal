@@ -12,17 +12,18 @@
 }
 
 .modal-content {
-  background-color: #242424; /* O el color de tu fondo */
+  background-color: #999999; /* O el color de tu fondo */
   padding: 30px;
   border-radius: 15px;
-  border: 1px solid #646cff;
+  border: 1px solid #f5145f;
   width: 85%;
-  max-width: 400px;
+  max-width: 500px;
   text-align: left;
 }
 
 .btn-cerrar {
   margin-top: 20px;
   width: 100%;
-  background-color: #ff4646;
+  background-color: #8f8d8e;
+  border: solid 2px #000;
 }

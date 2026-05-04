@@ -1,0 +1,23 @@
+.seccion-relacionados {
+  margin-top: "15px";
+  text-align: "left";
+}
+.relacionados-titulo {
+  font-size: "0.9rem";
+  color: "#aaa";
+  margin-bottom: "5px";
+}
+.relacionados-lista {
+  max-height: "100px";
+  overflow-y: "auto";
+  background: "rgba(255,255,255,0.05)";
+  padding: "5px";
+  border-radius: "4px";
+}
+.art-ventana {
+  font-size: 0.85rem;
+  color: #fff;
+  padding: 3px 0;
+  background: rgb(53, 53, 53);
+  border: 1px solid #000;
+}
