@@ -150,7 +150,8 @@ export function DetalleProducto({
             </p>
             {relacionados.map((rel) => (
               <div key={rel.id} className="art-en-ventana">
-                • {rel.nombre} (Stock: {rel.stock})
+                • {rel.nombre} / Stock: {rel.stock} / VTO:{" "}
+                {rel.fechaVto || "N/A"}
               </div>
             ))}
           </div>
