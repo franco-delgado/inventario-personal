@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import "./componentes.css";
 
@@ -8,14 +8,27 @@ export function DetalleProducto({
   todosLosProductos,
   onActualizar,
 }) {
-  const [editando, setEditando] = useState(false);
+  // Estado local para los inputs
   const [datosEditados, setDatosEditados] = useState({
+    registro: producto?.registro || "",
     stock: producto?.stock || 0,
     fechaVto: producto?.fechaVto || "",
   });
 
+  // Actualizar el estado local si el producto cambia
+  useEffect(() => {
+    if (producto) {
+      setDatosEditados({
+        registro: producto.registro || "",
+        stock: producto.stock || 0,
+        fechaVto: producto.fechaVto || "",
+      });
+    }
+  }, [producto]);
+
   if (!producto) return null;
 
+  // Lógica de artículos relacionados
   const nombreBase = producto.nombre
     ? producto.nombre.split(" ").slice(0, 2).join(" ").toLowerCase()
     : "";
@@ -24,19 +37,19 @@ export function DetalleProducto({
       item.nombre.toLowerCase().includes(nombreBase) && item.id !== producto.id,
   );
 
-  const handleGuardarCambios = async () => {
+  // Función para actualizar un solo campo
+  const actualizarCampoUnico = async (nombreColumna, valor) => {
     try {
+      const valorFinal = nombreColumna === "stock" ? parseInt(valor) : valor;
+
       const { error } = await supabase
         .from("productos-farmacia")
-        .update({
-          stock: parseInt(datosEditados.stock),
-          fechaVto: datosEditados.fechaVto,
-        })
+        .update({ [nombreColumna]: valorFinal })
         .eq("id", producto.id);
 
       if (error) throw error;
-      alert("Datos actualizados");
-      setEditando(false);
+
+      alert(`${nombreColumna.toUpperCase()} actualizado correctamente`);
       if (onActualizar) onActualizar();
     } catch (err) {
       alert("Error: " + err.message);
@@ -63,95 +76,152 @@ export function DetalleProducto({
   return (
     <div className="modal-overlay">
       <div className="modal-content">
-        <h2>{editando ? "Editar Datos" : "Detalle"}</h2>
+        <h2>Detalle del Producto</h2>
         <hr />
 
         <div className="infoPrincipal">
           <p>
             <strong>Nombre:</strong> {producto.nombre}
           </p>
-          <p>
-            <strong>Registro:</strong> {producto.registro || "N/A"}
-          </p>
 
-          <div className="campo-edicion">
-            <label>Stock: </label>
-            {editando ? (
-              <input
-                type="number"
-                value={datosEditados.stock}
-                onChange={(e) =>
-                  setDatosEditados({ ...datosEditados, stock: e.target.value })
+          {/* CAMPO REGISTRO */}
+          <div
+            className="campo-edicion-fila"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              marginBottom: "10px",
+            }}
+          >
+            <label style={{ minWidth: "80px" }}>Registro: </label>
+            <input
+              type="text"
+              className="buscador"
+              value={datosEditados.registro}
+              onChange={(e) =>
+                setDatosEditados({ ...datosEditados, registro: e.target.value })
+              }
+              style={{ flex: 1 }}
+            />
+            {datosEditados.registro !== producto.registro && (
+              <button
+                className="btn-guardar"
+                onClick={() =>
+                  actualizarCampoUnico("registro", datosEditados.registro)
                 }
-              />
-            ) : (
-              <span>{producto.stock}</span>
+                style={{ padding: "5px 10px", fontSize: "12px" }}
+              >
+                ✓
+              </button>
             )}
           </div>
 
-          <div className="campo-edicion">
-            <label>Vto: </label>
-            {editando ? (
-              <input
-                type="date"
-                value={datosEditados.fechaVto}
-                onChange={(e) =>
-                  setDatosEditados({
-                    ...datosEditados,
-                    fechaVto: e.target.value,
-                  })
+          {/* CAMPO STOCK */}
+          <div
+            className="campo-edicion-fila"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              marginBottom: "10px",
+            }}
+          >
+            <label style={{ minWidth: "80px" }}>Stock: </label>
+            <input
+              type="number"
+              className="buscador"
+              value={datosEditados.stock}
+              onChange={(e) =>
+                setDatosEditados({ ...datosEditados, stock: e.target.value })
+              }
+              style={{ flex: 1 }}
+            />
+            {parseInt(datosEditados.stock) !== parseInt(producto.stock) && (
+              <button
+                className="btn-guardar"
+                onClick={() =>
+                  actualizarCampoUnico("stock", datosEditados.stock)
                 }
-              />
-            ) : (
-              <span>{producto.fechaVto || "N/A"}</span>
+                style={{ padding: "5px 10px", fontSize: "12px" }}
+              >
+                ✓
+              </button>
+            )}
+          </div>
+
+          {/* CAMPO VENCIMIENTO */}
+          <div
+            className="campo-edicion-fila"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              marginBottom: "10px",
+            }}
+          >
+            <label style={{ minWidth: "80px" }}>Vto: </label>
+            <input
+              type="date"
+              className="buscador"
+              value={datosEditados.fechaVto}
+              onChange={(e) =>
+                setDatosEditados({ ...datosEditados, fechaVto: e.target.value })
+              }
+              style={{ flex: 1 }}
+            />
+            {datosEditados.fechaVto !== (producto.fechaVto || "") && (
+              <button
+                className="btn-guardar"
+                onClick={() =>
+                  actualizarCampoUnico("fechaVto", datosEditados.fechaVto)
+                }
+                style={{ padding: "5px 10px", fontSize: "12px" }}
+              >
+                ✓
+              </button>
             )}
           </div>
         </div>
 
-        <div
-          className="botones-accion"
-          style={{ display: "flex", gap: "10px", marginTop: "15px" }}
-        >
-          {editando ? (
-            <>
-              <button className="btn-guardar" onClick={handleGuardarCambios}>
-                GUARDAR
-              </button>
-              <button
-                className="btn-cancelar"
-                onClick={() => setEditando(false)}
-              >
-                CANCELAR
-              </button>
-            </>
-          ) : (
-            <>
-              <button className="btn-editar" onClick={() => setEditando(true)}>
-                EDITAR
-              </button>
-              <button
-                className="btn-eliminar"
-                onClick={handleEliminar}
-                style={{ background: "#ff4d4d" }}
-              >
-                ELIMINAR
-              </button>
-            </>
-          )}
+        <div className="botones-accion" style={{ marginTop: "15px" }}>
+          <button
+            className="btn-eliminar"
+            onClick={handleEliminar}
+            style={{
+              background: "#ff4d4d",
+              width: "100%",
+              color: "white",
+              padding: "10px",
+              border: "none",
+              borderRadius: "5px",
+              cursor: "pointer",
+            }}
+          >
+            ELIMINAR PRODUCTO
+          </button>
         </div>
 
-        {!editando && relacionados.length > 0 && (
+        {/* AQUÍ ESTABA EL ERROR: He quitado la condición !editando */}
+        {relacionados.length > 0 && (
           <div
             className="seccion-relacionados"
-            style={{ marginTop: "20px", borderTop: "1px solid #444" }}
+            style={{
+              marginTop: "20px",
+              borderTop: "1px solid #444",
+              paddingTop: "10px",
+            }}
           >
-            <p style={{ fontSize: "0.85rem", color: "#888" }}>
+            <p
+              className="art-relacionado"
+              style={{ fontWeight: "bold", marginBottom: "5px" }}
+            >
               Artículos relacionados:
             </p>
             {relacionados.map((rel) => (
               <div key={rel.id} className="art-en-ventana">
                 • {rel.nombre} / Stock: {rel.stock} / VTO:{" "}
-                {rel.fechaVto || "N/A"} / {rel.registro}
+                {rel.fechaVto || "N/A"}
               </div>
             ))}
           </div>
@@ -160,7 +230,16 @@ export function DetalleProducto({
         <button
           className="btn-cerrar"
           onClick={onClose}
-          style={{ marginTop: "20px", width: "100%" }}
+          style={{
+            marginTop: "20px",
+            width: "100%",
+            background: "#444",
+            color: "white",
+            padding: "10px",
+            border: "none",
+            borderRadius: "5px",
+            cursor: "pointer",
+          }}
         >
           CERRAR VENTANA
         </button>

@@ -41,7 +41,7 @@ export function FormularioNuevo({
       <h3>Registrar Producto</h3>
       <form onSubmit={handleSubmit} className="inputs-registro">
         {/* Código de Barras con botón de Scanner */}
-        <div style={{ display: "flex", gap: "5px" }}>
+        <div className="contenInputs">
           <input
             name="cb"
             placeholder="Código de Barras"

@@ -1,18 +1,33 @@
+/*VISTAPRODUCTOS*/
+
+.lista-resultados {
+  margin-bottom: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.btn-resultado {
+  padding: 6px 2px;
+}
+
 .seccion-relacionados {
-  margin-top: "15px";
-  text-align: "left";
+  margin-top: 15px;
+  text-align: left;
 }
 .relacionados-titulo {
-  font-size: "0.9rem";
-  color: "#aaa";
-  margin-bottom: "5px";
+  font-size: 0.9rem;
+  color: #aaa;
+  margin-bottom: 5px;
 }
 .relacionados-lista {
-  max-height: "100px";
-  overflow-y: "auto";
-  background: "rgba(255,255,255,0.05)";
-  padding: "5px";
-  border-radius: "4px";
+  max-height: 100px;
+  overflow-y: auto;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 5px;
+  border-radius: 4px;
 }
 .art-ventana {
   font-size: 0.85rem;
@@ -20,4 +35,46 @@
   padding: 3px 0;
   background: rgb(53, 53, 53);
   border: 1px solid #000;
+}
+/*DETALLE PRODUCTO*/
+.art-relacionado {
+  font-size: 0.85rem;
+  color: #000;
+}
+
+.campo-edicion-fila {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.btn-update-small {
+  background: #4caf50;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+.art-en-ventana {
+  font-size: 0.9rem;
+  color: #000;
+  margin-bottom: 3px;
+}
+
+/*FORMULARIO-NUEVO*/
+.formulario-nuevo {
+  background: #c7c5c5;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+.contenInputs {
+  display: flex;
+  gap: 5px;
 }

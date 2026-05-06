@@ -19,14 +19,16 @@ export function VistaProductos({
   setMostrandoFormularioNuevo,
   handleGuardar,
   setCodigoEscaneado,
-  codigoEscaneado
+  codigoEscaneado,
 }) {
-
   // --- LÓGICA DE FILTRADO LOCAL ---
-  const productosAMostrar = Array.isArray(resultadosBusqueda) 
+  const productosAMostrar = Array.isArray(resultadosBusqueda)
     ? resultadosBusqueda.filter((prod) => {
         // 1. Filtro por Nombre
-        if (busqueda.nombre && !prod.nombre.toLowerCase().includes(busqueda.nombre.toLowerCase())) {
+        if (
+          busqueda.nombre &&
+          !prod.nombre.toLowerCase().includes(busqueda.nombre.toLowerCase())
+        ) {
           return false;
         }
         // 2. Filtro por Código de Barras (cb)
@@ -34,14 +36,22 @@ export function VistaProductos({
           return false;
         }
         // 3. Filtro por Registro
-        if (busqueda.registro && !prod.registro?.toLowerCase().includes(busqueda.registro.toLowerCase())) {
+        if (
+          busqueda.registro &&
+          !prod.registro
+            ?.toLowerCase()
+            .includes(busqueda.registro.toLowerCase())
+        ) {
           return false;
         }
         // 4. Filtro por Fecha (Mes: YYYY-MM)
-        if (busqueda.fecha && (!prod.fechaVto || !prod.fechaVto.startsWith(busqueda.fecha))) {
+        if (
+          busqueda.fecha &&
+          (!prod.fechaVto || !prod.fechaVto.startsWith(busqueda.fecha))
+        ) {
           return false;
         }
-        
+
         return true; // Si pasa todos los filtros activos
       })
     : [];
@@ -63,41 +73,73 @@ export function VistaProductos({
       )}
 
       <div className="header-navegacion">
-        <button onClick={() => setCategoriaSeleccionada(null)}>← Categorías</button>
+        <button onClick={() => setCategoriaSeleccionada(null)}>
+          ← Categorías
+        </button>
         <h1>{categoriaSeleccionada}</h1>
       </div>
 
       {!mostrandoFormularioNuevo ? (
         <div className="pantalla-productos">
-          <div className="contenedor-busqueda" style={{ background: '#2a2a2a', padding: '15px', borderRadius: '10px', marginBottom: '15px' }}>
+          <div
+            className="contenedor-busqueda"
+            style={{
+              background: "#2a2a2a",
+              padding: "15px",
+              borderRadius: "10px",
+              marginBottom: "15px",
+            }}
+          >
             <input
               className="buscador"
               placeholder="NOMBRE..."
               value={busqueda.nombre || ""}
               onChange={(e) => {
-                setBusqueda({ nombre: e.target.value, cb: "", registro: "", fecha: "" });
+                setBusqueda({
+                  nombre: e.target.value,
+                  cb: "",
+                  registro: "",
+                  fecha: "",
+                });
               }}
-              style={{ width: '100%', marginBottom: '10px' }}
+              style={{ width: "100%", marginBottom: "10px" }}
             />
-            
-            <div style={{ display: "flex", gap: "10px", flexWrap: 'wrap' }}>
+
+            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
               <input
                 className="buscador"
                 placeholder="CB..."
                 value={busqueda.cb || ""}
                 onChange={(e) => {
-                  setBusqueda({ nombre: "", cb: e.target.value, registro: "", fecha: "" });
+                  setBusqueda({
+                    nombre: "",
+                    cb: e.target.value,
+                    registro: "",
+                    fecha: "",
+                  });
                 }}
                 style={{ flex: 1 }}
               />
-              <button onClick={() => { setScaneando(true); setInputDestino("busqueda"); }}>📸</button>
-              
+              <button
+                onClick={() => {
+                  setScaneando(true);
+                  setInputDestino("busqueda");
+                }}
+              >
+                📸
+              </button>
+
               <input
                 className="buscador"
                 placeholder="REGISTRO..."
                 value={busqueda.registro || ""}
                 onChange={(e) => {
-                  setBusqueda({ nombre: "", cb: "", registro: e.target.value, fecha: "" });
+                  setBusqueda({
+                    nombre: "",
+                    cb: "",
+                    registro: e.target.value,
+                    fecha: "",
+                  });
                 }}
                 style={{ flex: 1 }}
               />
@@ -105,36 +147,69 @@ export function VistaProductos({
               <input
                 type="month"
                 className="buscador"
-                value={typeof busqueda.fecha === "string" && busqueda.fecha.length >= 7 ? busqueda.fecha : ""}
+                value={
+                  typeof busqueda.fecha === "string" &&
+                  busqueda.fecha.length >= 7
+                    ? busqueda.fecha
+                    : ""
+                }
                 onChange={(e) => {
-                  setBusqueda({ nombre: "", cb: "", registro: "", fecha: e.target.value });
+                  setBusqueda({
+                    nombre: "",
+                    cb: "",
+                    registro: "",
+                    fecha: e.target.value,
+                  });
                 }}
-                style={{ flex: 1, minWidth: '150px' }}
+                style={{ flex: 1, minWidth: "150px" }}
               />
             </div>
           </div>
 
           <div className="lista-resultados">
-            {productosAMostrar.length > 0 ? (
-              productosAMostrar.map((prod) => (
-                <button
-                  key={prod.id}
-                  className="btn-resultado"
-                  onClick={() => setProductoSeleccionado(prod)}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+            {/* Comprobamos si hay algún texto en cualquiera de los campos */}
+            {busqueda.nombre ||
+            busqueda.cb ||
+            busqueda.registro ||
+            busqueda.fecha ? (
+              productosAMostrar.length > 0 ? (
+                productosAMostrar.map((prod) => (
+                  <button
+                    key={prod.id}
+                    className="btn-resultado"
+                    onClick={() => setProductoSeleccionado(prod)}
+                  >
                     <span>{prod.nombre}</span>
-                  </div>
-                </button>
-              ))
+                  </button>
+                ))
+              ) : (
+                <p
+                  style={{
+                    textAlign: "center",
+                    color: "#888",
+                    marginTop: "20px",
+                  }}
+                >
+                  No se encontraron productos.
+                </p>
+              )
             ) : (
-              <p style={{ textAlign: 'center', color: '#888', marginTop: '20px' }}>
-                No se encontraron productos con esos filtros.
+              <p
+                style={{
+                  textAlign: "center",
+                  color: "#888",
+                  marginTop: "20px",
+                }}
+              >
+                Escribe algo para comenzar la búsqueda...
               </p>
             )}
           </div>
 
-          <button className="btn-nuevo" onClick={() => setMostrandoFormularioNuevo(true)}>
+          <button
+            className="btn-nuevo"
+            onClick={() => setMostrandoFormularioNuevo(true)}
+          >
             + NUEVO PRODUCTO
           </button>
         </div>
