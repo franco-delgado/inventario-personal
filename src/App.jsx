@@ -1,39 +1,92 @@
 import { useState, useEffect } from "react";
-import { supabase } from "./lib/supabase";
+import { supabase } from "./lib/supabase.js"
 import { Scanner } from "./components/Scanner";
 import { DetalleProducto } from "./components/DetalleProducto";
-import { FormularioNuevo } from "./components/FormularioNuevo"; // Importación necesaria
+import { FormularioNuevo } from "./components/FormularioNuevo";
+import { VistaProductos } from "./components/VistaProductos";
 import "./App.css";
 
 function App() {
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState(null);
-  const [busqueda, setBusqueda] = useState({
-    nombre: "",
-    cb: "",
-    registro: "",
-  });
+  const [categorias, setCategorias] = useState([]);
+  const [cargandoCategorias, setCargandoCategorias] = useState(true);
+
+  // --- 1. CARGAR CATEGORÍAS DESDE SUPABASE ---
+  const fetchCategorias = async () => {
+    try {
+      setCargandoCategorias(true);
+      const { data, error } = await supabase
+        .from("categoria-farmacia")
+        .select("*")
+        .order("categoria", { ascending: true }); // Ordenadas alfabéticamente
+
+      if (error) throw error;
+      setCategorias(data || []);
+    } catch (err) {
+      console.error("Error cargando categorías:", err.message);
+    } finally {
+      setCargandoCategorias(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCategorias();
+  }, []);
+
+  // --- 2. AGREGAR CATEGORÍA A SUPABASE ---
+  const agregarCategoria = async () => {
+    const nueva = prompt("Nombre de la nueva categoría:");
+    if (!nueva) return;
+
+    const categoriaLimpio = nueva.toUpperCase().trim();
+    
+    // Verificar si ya existe localmente para ahorrar una petición
+    if (categorias.some(c => c.categoria === categoriaLimpio)) {
+      return alert("La categoría ya existe.");
+    }
+
+    try {
+      const { error } = await supabase
+        .from("categoria-farmacia")
+        .insert([{ categoria: categoriaLimpio }]);
+
+      if (error) throw error;
+      fetchCategorias(); // Recargar lista
+    } catch (err) {
+      alert("Error al guardar: " + err.message);
+    }
+  };
+
+  // --- 3. ELIMINAR CATEGORÍA DE SUPABASE ---
+  const eliminarCategoria = async (id, categoria, e) => {
+    e.stopPropagation();
+    if (!window.confirm(`¿Seguro que quieres eliminar "${categoria}"?`)) return;
+
+    try {
+      const { error } = await supabase
+        .from("categoria-farmacia")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+      fetchCategorias(); // Recargar lista
+    } catch (err) {
+      alert("No se pudo eliminar: " + err.message);
+    }
+  };
+
+  // --- ESTADOS DE PRODUCTOS ---
+  const [busqueda, setBusqueda] = useState({ nombre: "", cb: "", registro: "", fecha: "" });
   const [resultadosBusqueda, setResultadosBusqueda] = useState([]);
   const [productoSeleccionado, setProductoSeleccionado] = useState(null);
-  const [mostrandoFormularioNuevo, setMostrandoFormularioNuevo] =
-    useState(false);
+  const [mostrandoFormularioNuevo, setMostrandoFormularioNuevo] = useState(false);
   const [scaneando, setScaneando] = useState(false);
   const [inputDestino, setInputDestino] = useState("");
   const [codigoEscaneado, setCodigoEscaneado] = useState("");
-  const [productosRelacionados, setProductosRelacionados] = useState([]);
-  // Eliminamos el estado 'nuevoProducto' de aquí porque ahora vive dentro de FormularioNuevo
 
-  const categorias = [
-    "CAPILARES",
-    "FEMENINAS",
-    "DESODORANTES",
-    "COLORACION",
-    "HELADERAS",
-    "BUCALES",
-  ];
-
-  // --- BÚSQUEDA ---
+  // --- BÚSQUEDA DE PRODUCTOS ---
   const buscarEnSupabase = async () => {
-    if (!busqueda.nombre && !busqueda.cb && !busqueda.registro) {
+    if (!busqueda.nombre && !busqueda.cb && !busqueda.registro && !busqueda.fecha) {
       setResultadosBusqueda([]);
       return;
     }
@@ -42,11 +95,10 @@ function App() {
         .from("productos-farmacia")
         .select("*")
         .eq("categoria", categoriaSeleccionada);
-      if (busqueda.nombre)
-        query = query.ilike("nombre", `%${busqueda.nombre}%`);
+      
+      if (busqueda.categoria) query = query.ilike("categoria", `%${busqueda.categoria}%`);
       if (busqueda.cb) query = query.eq("cb", busqueda.cb);
-      if (busqueda.registro)
-        query = query.ilike("registro", `%${busqueda.registro}%`);
+      if (busqueda.registro) query = query.ilike("registro", `%${busqueda.registro}%`);
 
       const { data, error } = await query;
       if (error) throw error;
@@ -55,9 +107,9 @@ function App() {
       console.error(err.message);
     }
   };
-  // 2. El useEffect ahora solo se encarga de disparar la búsqueda con el timer
+
   useEffect(() => {
-    const timer = setTimeout(buscarEnSupabase, 400);
+    const timer = setTimeout(buscarEnSupabase, 100);
     return () => clearTimeout(timer);
   }, [busqueda, categoriaSeleccionada]);
 
@@ -67,15 +119,11 @@ function App() {
       setBusqueda({ nombre: "", cb: codigo, registro: "" });
     } else {
       setCodigoEscaneado(codigo);
-      // Este evento se manejará a través de la prop que reciba el componente Formulario si es necesario,
-      // pero por ahora lo mantenemos simple para que funcione con tu lógica de 'inputDestino'
-      //  window.dispatchEvent(new CustomEvent("scan-nuevo", { detail: codigo }));
     }
     setScaneando(false);
   };
 
   const handleGuardar = async (productoData) => {
-    // Ahora recibe los datos desde el componente
     try {
       const { error } = await supabase.from("productos-farmacia").insert([
         {
@@ -86,7 +134,7 @@ function App() {
         },
       ]);
       if (error) throw error;
-      alert("Guardado");
+      alert("Producto Guardado");
       setMostrandoFormularioNuevo(false);
       setBusqueda({ nombre: "", cb: "", registro: "" });
     } catch (err) {
@@ -94,131 +142,65 @@ function App() {
     }
   };
 
+  // --- VISTA DE SELECCIÓN DE CATEGORÍA ---
   if (!categoriaSeleccionada) {
     return (
       <div className="content-principal">
         <h1>Inventario Farmacia</h1>
-        <div className="content-categorias">
-          {categorias.map((cat) => (
-            <button
-              key={cat}
-              className="btn-categoria"
-              onClick={() => setCategoriaSeleccionada(cat)}
-            >
-              {cat}
+        {cargandoCategorias ? (
+          <p>Cargando categorías...</p>
+        ) : (
+          <div className="content-categorias">
+            {categorias.map((cat) => (
+              <div key={cat.id} className="contenedor-btn-categoria">
+                <button
+                  className="btn-categoria"
+                  onClick={() => setCategoriaSeleccionada(cat.categoria)}
+                >
+                  {cat.categoria}
+                </button>
+                <button 
+                  className="btn-eliminar-cat" 
+                  onClick={(e) => eliminarCategoria(cat.id, cat.categoria, e)}
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+            <button className="btn-agregar-cat" onClick={agregarCategoria}>
+              Nueva Categoría
             </button>
-          ))}
-        </div>
+          </div>
+        )}
       </div>
     );
   }
 
-  return (
-    <div className="content-principal">
-      <DetalleProducto
-        producto={productoSeleccionado}
-        onClose={() => setProductoSeleccionado(null)}
-        todosLosProductos={resultadosBusqueda} // <--- ¡Asegúrate de que esta variable tenga datos!
-        onActualizar={buscarEnSupabase} // <-- Esto hará que la lista se actualice sola al editar/borrar
-        lista
-        completa
-        aquí
-      />
-
-      {scaneando && (
-        <Scanner
-          onScanSuccess={handleScanSuccess}
-          onClose={() => setScaneando(false)}
-        />
-      )}
-
-      <button onClick={() => setCategoriaSeleccionada(null)}>← Volver</button>
-      <h1>{categoriaSeleccionada}</h1>
-
-      {!mostrandoFormularioNuevo ? (
-        <div className="pantalla-productos">
-          <div
-            className="contenedor-busqueda"
-            style={{ display: "flex", flexDirection: "column", gap: "10px" }}
-          >
-            <input
-              className="buscador"
-              placeholder="NOMBRE..."
-              value={busqueda.nombre}
-              onChange={(e) =>
-                setBusqueda({ nombre: e.target.value, cb: "", registro: "" })
-              }
-            />
-            <div style={{ display: "flex", gap: "10px" }}>
-              <input
-                className="buscador"
-                placeholder="CB..."
-                value={busqueda.cb}
-                onChange={(e) =>
-                  setBusqueda({ nombre: "", cb: e.target.value, registro: "" })
-                }
-              />
-              <button
-                onClick={() => {
-                  setScaneando(true);
-                  setInputDestino("busqueda");
-                }}
-              >
-                📸
-              </button>
-              <input
-                className="buscador"
-                placeholder="REGISTRO..."
-                value={busqueda.registro}
-                onChange={(e) =>
-                  setBusqueda({ nombre: "", cb: "", registro: e.target.value })
-                }
-              />
-            </div>
-          </div>
-
-          <div className="lista-resultados">
-            {resultadosBusqueda.map((prod) => (
-              <button
-                key={prod.id}
-                className="btn-resultado"
-                onClick={() => {
-                  // 1. Seteamos el producto principal para el detalle
-                  setProductoSeleccionado(prod);
-                  // 2. Lógica para encontrar similares:
-                  // Tomamos las primeras dos palabras (ej: "ELVIVE KERA") para que la búsqueda sea precisa
-                  const palabrasNombre = prod.nombre.split(" ");
-                  const baseBusqueda = palabrasNombre
-                    .slice(0, 2)
-                    .join(" ")
-                    .toLowerCase();
-                }}
-              >
-                {prod.nombre} - Reg: {prod.registro || "N/A"}
-              </button>
-            ))}
-          </div>
-          <button
-            className="btn-nuevo"
-            onClick={() => setMostrandoFormularioNuevo(true)}
-          >
-            + NUEVO
-          </button>
-        </div>
-      ) : (
-        /* AQUÍ VA EL CAMBIO PRINCIPAL */
-        <FormularioNuevo
-          onGuardar={handleGuardar}
-          onCancelar={() => setMostrandoFormularioNuevo(false)}
-          onAbrirScanner={() => {
-            setScaneando(true);
-            setInputDestino("nuevo");
-            setCodigoEscaneado(""); // Limpiar el código escaneado antes de abrir el scanner
-          }}
-        />
-      )}
-    </div>
-  );
+  // --- VISTA DE PRODUCTOS ---
+  if (categoriaSeleccionada) {
+    return(
+      <VistaProductos
+      categoriaSeleccionada={categoriaSeleccionada}
+      setCategoriaSeleccionada={setCategoriaSeleccionada}
+      productoSeleccionado={productoSeleccionado}
+      setProductoSeleccionado={setProductoSeleccionado}
+      resultadosBusqueda={resultadosBusqueda}
+      buscarEnSupabase={buscarEnSupabase}
+      scaneando={scaneando}
+      setScaneando={setScaneando}
+      handleScanSuccess={handleScanSuccess}
+      busqueda={busqueda}
+      setBusqueda={setBusqueda}
+      setInputDestino={setInputDestino}
+      mostrandoFormularioNuevo={mostrandoFormularioNuevo}
+      setMostrandoFormularioNuevo={setMostrandoFormularioNuevo}
+      handleGuardar={handleGuardar}
+      setCodigoEscaneado={setCodigoEscaneado}
+      codigoEscaneado={codigoEscaneado}
+    />
+    )
+  }
+  
 }
 
 export default App;

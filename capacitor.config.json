@@ -1,0 +1,8 @@
+{
+  "appId": "com.franco.inventario",
+  "appName": "Inventario Farmacia",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  }
+}
