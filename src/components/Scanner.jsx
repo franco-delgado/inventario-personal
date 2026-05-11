@@ -1,59 +1,74 @@
 import { useEffect, useRef } from "react";
-import { BrowserMultiFormatReader } from "@zxing/library";
+import Quagga from "@ericblade/quagga2"; // Importación de Quagga2
 
 export function Scanner({ onScanSuccess, onClose }) {
-  const videoRef = useRef(null);
-  const codeReaderRef = useRef(new BrowserMultiFormatReader());
-  const isMounted = useRef(true); // Para rastrear si el componente sigue vivo
+  const videoContainerRef = useRef(null);
+  const isMounted = useRef(true);
 
   useEffect(() => {
     isMounted.current = true;
-    const hints = new Map();
-    hints.set(2, [0, 1, 2, 3, 4, 11, 14, 15]);
-    hints.set(3, true);
 
     const startScanner = async () => {
-      // Agregamos un pequeño delay de 200ms
-      // Esto da tiempo a que cualquier instancia anterior se limpie del todo
+      // Pequeño delay para asegurar que el DOM esté listo y limpiar instancias previas
       await new Promise((resolve) => setTimeout(resolve, 200));
 
-      if (!isMounted.current || !videoRef.current) return;
+      if (!isMounted.current || !videoContainerRef.current) return;
 
       try {
-        console.log("🚀 Intentando acceder a la cámara...");
-        await codeReaderRef.current.decodeFromVideoDevice(
-          undefined,
-          videoRef.current,
-          (result, err) => {
-            if (result && isMounted.current) {
-              console.log("✅ Código detectado:", result.getText());
-              onScanSuccess(result.getText());
-            }
+        console.log("🚀 Iniciando Quagga2...");
+        
+        await Quagga.init({
+          inputStream: {
+            name: "Live",
+            type: "LiveStream",
+            target: videoContainerRef.current, // Contenedor donde Quagga inyectará el video
+            constraints: {
+              width: 1280,
+              height: 720,
+              facingMode: "environment", // Usar cámara trasera
+            },
           },
-          hints,
-        );
-      } catch (error) {
-        // Si el error es que ya está reproduciendo, lo ignoramos silenciosamente
-        if (
-          error.name !== "NotReadableError" &&
-          !error.message?.includes("already playing")
-        ) {
-          console.error("❌ Error real de cámara:", error);
+          locator: {
+            patchSize: "medium",
+            halfSample: true, // Optimiza velocidad reduciendo la resolución de procesamiento
+          },
+          numOfWorkers: navigator.hardwareConcurrency || 4,
+          decoder: {
+            // Aquí defines qué tipos de códigos quieres leer
+            readers: ["ean_reader", "code_128_reader", "ean_8_reader", "code_39_reader"],
+          },
+          locate: true, // Localiza el código en la imagen para mejor enfoque
+        });
+
+        if (isMounted.current) {
+          Quagga.start();
+          console.log("✅ Quagga iniciado correctamente");
         }
+
+        Quagga.onDetected((data) => {
+          if (data && data.codeResult && isMounted.current) {
+            console.log("✅ Código detectado:", data.codeResult.code);
+            onScanSuccess(data.codeResult.code);
+          }
+        });
+
+      } catch (error) {
+        console.error("❌ Error al iniciar Quagga:", error);
       }
     };
 
     startScanner();
 
     return () => {
-      console.log("🛑 Limpiando recursos...");
+      console.log("🛑 Deteniendo Quagga...");
       isMounted.current = false;
-      codeReaderRef.current.reset();
-
-      // Forzamos la detención de los tracks de video manualmente
-      if (videoRef.current && videoRef.current.srcObject) {
-        const tracks = videoRef.current.srcObject.getTracks();
-        tracks.forEach((track) => track.stop());
+      Quagga.offDetected();
+      Quagga.stop();
+      
+      // Limpieza manual extra de tracks de video
+      const videoElem = videoContainerRef.current?.querySelector('video');
+      if (videoElem && videoElem.srcObject) {
+        videoElem.srcObject.getTracks().forEach(track => track.stop());
       }
     };
   }, [onScanSuccess]);
@@ -81,13 +96,12 @@ export function Scanner({ onScanSuccess, onClose }) {
           borderRadius: "15px",
         }}
       >
-        <h3
-          style={{ color: "white", textAlign: "center", marginBottom: "15px" }}
-        >
-          ESCANEANDO...
+        <h3 style={{ color: "white", textAlign: "center", marginBottom: "15px" }}>
+          ESCANEANDO CÓDIGO...
         </h3>
 
         <div
+          ref={videoContainerRef} // Quagga insertará el video aquí automáticamente
           style={{
             position: "relative",
             overflow: "hidden",
@@ -96,22 +110,30 @@ export function Scanner({ onScanSuccess, onClose }) {
             aspectRatio: "4/3",
           }}
         >
-          <video
-            ref={videoRef}
-            muted
-            playsInline
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-          />
+          {/* Quagga añade un <video> y un <canvas> aquí. Estilizamos los hijos con CSS: */}
+          <style>{`
+            #video-container canvas, #video-container video {
+              width: 100%;
+              height: 100%;
+              object-fit: cover;
+              position: absolute;
+              top: 0;
+              left: 0;
+            }
+          `}</style>
+          
+          {/* El recuadro guía (Overlay visual) */}
           <div
             style={{
               position: "absolute",
               top: "50%",
               left: "50%",
               transform: "translate(-50%, -50%)",
-              width: "70%",
-              height: "40%",
+              width: "80%",
+              height: "30%",
               border: "2px solid #00ff00",
               boxShadow: "0 0 0 4000px rgba(0,0,0,0.5)",
+              zIndex: 10,
               pointerEvents: "none",
             }}
           ></div>
@@ -128,6 +150,7 @@ export function Scanner({ onScanSuccess, onClose }) {
             border: "none",
             borderRadius: "8px",
             fontWeight: "bold",
+            cursor: "pointer"
           }}
         >
           CERRAR
