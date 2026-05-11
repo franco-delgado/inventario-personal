@@ -1,81 +1,91 @@
-import { useEffect, useRef } from "react";
-import Quagga from "@ericblade/quagga2"; // Importación de Quagga2
+import { useEffect, useRef, useState } from "react";
 
 export function Scanner({ onScanSuccess, onClose }) {
-  const videoContainerRef = useRef(null);
+  const videoRef = useRef(null);
+  const [isApiSupported, setIsApiSupported] = useState(true);
   const isMounted = useRef(true);
 
   useEffect(() => {
     isMounted.current = true;
 
-    const startScanner = async () => {
-      // Pequeño delay para asegurar que el DOM esté listo y limpiar instancias previas
-      await new Promise((resolve) => setTimeout(resolve, 200));
+    // 1. Verificar si el navegador soporta la API
+    if (!("BarcodeDetector" in window)) {
+      console.warn("Barcode Detection API no es soportada en este navegador.");
+      setIsApiSupported(false);
+      return;
+    }
 
-      if (!isMounted.current || !videoContainerRef.current) return;
-
+    const startCamera = async () => {
       try {
-        console.log("🚀 Iniciando Quagga2...");
-        
-        await Quagga.init({
-          inputStream: {
-            name: "Live",
-            type: "LiveStream",
-            target: videoContainerRef.current, // Contenedor donde Quagga inyectará el video
-            constraints: {
-              width: 1280,
-              height: 720,
-              facingMode: "environment", // Usar cámara trasera
-            },
-          },
-          locator: {
-            patchSize: "medium",
-            halfSample: true, // Optimiza velocidad reduciendo la resolución de procesamiento
-          },
-          numOfWorkers: navigator.hardwareConcurrency || 4,
-          decoder: {
-            // Aquí defines qué tipos de códigos quieres leer
-            readers: ["ean_reader", "code_128_reader", "ean_8_reader", "code_39_reader"],
-          },
-          locate: true, // Localiza el código en la imagen para mejor enfoque
-        });
-
-        if (isMounted.current) {
-          Quagga.start();
-          console.log("✅ Quagga iniciado correctamente");
-        }
-
-        Quagga.onDetected((data) => {
-          if (data && data.codeResult && isMounted.current) {
-            console.log("✅ Código detectado:", data.codeResult.code);
-            onScanSuccess(data.codeResult.code);
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: "environment",
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
           }
         });
 
-      } catch (error) {
-        console.error("❌ Error al iniciar Quagga:", error);
+        if (videoRef.current && isMounted.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+          startScanning();
+        }
+      } catch (err) {
+        console.error("Error al acceder a la cámara:", err);
       }
     };
 
-    startScanner();
+    const startScanning = async () => {
+      // 2. Configurar el detector (especificamos formatos para mayor velocidad)
+      const barcodeDetector = new window.BarcodeDetector({
+        formats: ["ean_13", "ean_8", "code_128", "code_39", "qr_code"]
+      });
+
+      const render = async () => {
+        if (!isMounted.current || !videoRef.current) return;
+
+        try {
+          // 3. Detectar códigos en el frame actual del video
+          const barcodes = await barcodeDetector.detect(videoRef.current);
+          
+          if (barcodes.length > 0 && isMounted.current) {
+            const detectedValue = barcodes[0].rawValue;
+            console.log("✅ Código detectado:", detectedValue);
+            onScanSuccess(detectedValue);
+            return; // Detenemos el loop tras el primer éxito
+          }
+        } catch (e) {
+          // Errores silenciosos durante el escaneo de frames
+        }
+
+        // Continuar el loop de detección
+        requestAnimationFrame(render);
+      };
+
+      render();
+    };
+
+    startCamera();
 
     return () => {
-      console.log("🛑 Deteniendo Quagga...");
       isMounted.current = false;
-      Quagga.offDetected();
-      Quagga.stop();
-      
-      // Limpieza manual extra de tracks de video
-      const videoElem = videoContainerRef.current?.querySelector('video');
-      if (videoElem && videoElem.srcObject) {
-        videoElem.srcObject.getTracks().forEach(track => track.stop());
+      if (videoRef.current && videoRef.current.srcObject) {
+        videoRef.current.srcObject.getTracks().forEach(track => track.stop());
       }
     };
   }, [onScanSuccess]);
 
+  if (!isApiSupported) {
+    return (
+      <div style={{ color: "white", textAlign: "center", padding: "20px", background: "red" }}>
+        Tu navegador no soporta la detección nativa de códigos.
+        <button onClick={onClose}>Cerrar</button>
+      </div>
+    );
+  }
+
   return (
     <div
-      className="modal-overlay"
       style={{
         background: "rgba(0,0,0,0.9)",
         zIndex: 1000,
@@ -87,7 +97,6 @@ export function Scanner({ onScanSuccess, onClose }) {
       }}
     >
       <div
-        className="modal-content"
         style={{
           width: "90%",
           maxWidth: "500px",
@@ -97,32 +106,27 @@ export function Scanner({ onScanSuccess, onClose }) {
         }}
       >
         <h3 style={{ color: "white", textAlign: "center", marginBottom: "15px" }}>
-          ESCANEANDO CÓDIGO...
+          ESCANEADO NATIVO (GPU)
         </h3>
 
         <div
-          ref={videoContainerRef} // Quagga insertará el video aquí automáticamente
           style={{
             position: "relative",
+            width: "100%",
+            aspectRatio: "4/3",
             overflow: "hidden",
             borderRadius: "10px",
             backgroundColor: "#000",
-            aspectRatio: "4/3",
           }}
         >
-          {/* Quagga añade un <video> y un <canvas> aquí. Estilizamos los hijos con CSS: */}
-          <style>{`
-            #video-container canvas, #video-container video {
-              width: 100%;
-              height: 100%;
-              object-fit: cover;
-              position: absolute;
-              top: 0;
-              left: 0;
-            }
-          `}</style>
+          <video
+            ref={videoRef}
+            muted
+            playsInline
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
           
-          {/* El recuadro guía (Overlay visual) */}
+          {/* Overlay visual */}
           <div
             style={{
               position: "absolute",
@@ -130,13 +134,12 @@ export function Scanner({ onScanSuccess, onClose }) {
               left: "50%",
               transform: "translate(-50%, -50%)",
               width: "80%",
-              height: "30%",
+              height: "40%",
               border: "2px solid #00ff00",
               boxShadow: "0 0 0 4000px rgba(0,0,0,0.5)",
-              zIndex: 10,
               pointerEvents: "none",
             }}
-          ></div>
+          />
         </div>
 
         <button
@@ -150,7 +153,6 @@ export function Scanner({ onScanSuccess, onClose }) {
             border: "none",
             borderRadius: "8px",
             fontWeight: "bold",
-            cursor: "pointer"
           }}
         >
           CERRAR
