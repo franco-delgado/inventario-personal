@@ -1,91 +1,66 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
+import { BrowserMultiFormatReader } from "@zxing/library";
 
 export function Scanner({ onScanSuccess, onClose }) {
   const videoRef = useRef(null);
-  const [isApiSupported, setIsApiSupported] = useState(true);
-  const isMounted = useRef(true);
+  const codeReaderRef = useRef(new BrowserMultiFormatReader());
+  const isMounted = useRef(true); // Para rastrear si el componente sigue vivo
 
   useEffect(() => {
     isMounted.current = true;
+    const hints = new Map();
+    hints.set(2, [0, 1, 2, 3, 4, 11, 14, 15]);
+    hints.set(3, true);
 
-    // 1. Verificar si el navegador soporta la API
-    if (!("BarcodeDetector" in window)) {
-      console.warn("Barcode Detection API no es soportada en este navegador.");
-      setIsApiSupported(false);
-      return;
-    }
+    const startScanner = async () => {
+      // Agregamos un pequeño delay de 200ms
+      // Esto da tiempo a que cualquier instancia anterior se limpie del todo
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
-    const startCamera = async () => {
+      if (!isMounted.current || !videoRef.current) return;
+
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: "environment",
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-          }
-        });
-
-        if (videoRef.current && isMounted.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play();
-          startScanning();
+        console.log("🚀 Intentando acceder a la cámara...");
+        await codeReaderRef.current.decodeFromVideoDevice(
+          undefined,
+          videoRef.current,
+          (result, err) => {
+            if (result && isMounted.current) {
+              console.log("✅ Código detectado:", result.getText());
+              onScanSuccess(result.getText());
+            }
+          },
+          hints,
+        );
+      } catch (error) {
+        // Si el error es que ya está reproduciendo, lo ignoramos silenciosamente
+        if (
+          error.name !== "NotReadableError" &&
+          !error.message?.includes("already playing")
+        ) {
+          console.error("❌ Error real de cámara:", error);
         }
-      } catch (err) {
-        console.error("Error al acceder a la cámara:", err);
       }
     };
 
-    const startScanning = async () => {
-      // 2. Configurar el detector (especificamos formatos para mayor velocidad)
-      const barcodeDetector = new window.BarcodeDetector({
-        formats: ["ean_13", "ean_8", "code_128", "code_39", "qr_code"]
-      });
-
-      const render = async () => {
-        if (!isMounted.current || !videoRef.current) return;
-
-        try {
-          // 3. Detectar códigos en el frame actual del video
-          const barcodes = await barcodeDetector.detect(videoRef.current);
-          
-          if (barcodes.length > 0 && isMounted.current) {
-            const detectedValue = barcodes[0].rawValue;
-            console.log("✅ Código detectado:", detectedValue);
-            onScanSuccess(detectedValue);
-            return; // Detenemos el loop tras el primer éxito
-          }
-        } catch (e) {
-          // Errores silenciosos durante el escaneo de frames
-        }
-
-        // Continuar el loop de detección
-        requestAnimationFrame(render);
-      };
-
-      render();
-    };
-
-    startCamera();
+    startScanner();
 
     return () => {
+      console.log("🛑 Limpiando recursos...");
       isMounted.current = false;
+      codeReaderRef.current.reset();
+
+      // Forzamos la detención de los tracks de video manualmente
       if (videoRef.current && videoRef.current.srcObject) {
-        videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+        const tracks = videoRef.current.srcObject.getTracks();
+        tracks.forEach((track) => track.stop());
       }
     };
   }, [onScanSuccess]);
 
-  if (!isApiSupported) {
-    return (
-      <div style={{ color: "white", textAlign: "center", padding: "20px", background: "red" }}>
-        Tu navegador no soporta la detección nativa de códigos.
-        <button onClick={onClose}>Cerrar</button>
-      </div>
-    );
-  }
-
   return (
     <div
+      className="modal-overlay"
       style={{
         background: "rgba(0,0,0,0.9)",
         zIndex: 1000,
@@ -97,6 +72,7 @@ export function Scanner({ onScanSuccess, onClose }) {
       }}
     >
       <div
+        className="modal-content"
         style={{
           width: "90%",
           maxWidth: "500px",
@@ -105,18 +81,19 @@ export function Scanner({ onScanSuccess, onClose }) {
           borderRadius: "15px",
         }}
       >
-        <h3 style={{ color: "white", textAlign: "center", marginBottom: "15px" }}>
-          ESCANEADO NATIVO (GPU)
+        <h3
+          style={{ color: "white", textAlign: "center", marginBottom: "15px" }}
+        >
+          ESCANEANDO...
         </h3>
 
         <div
           style={{
             position: "relative",
-            width: "100%",
-            aspectRatio: "4/3",
             overflow: "hidden",
             borderRadius: "10px",
             backgroundColor: "#000",
+            aspectRatio: "4/3",
           }}
         >
           <video
@@ -125,21 +102,19 @@ export function Scanner({ onScanSuccess, onClose }) {
             playsInline
             style={{ width: "100%", height: "100%", objectFit: "cover" }}
           />
-          
-          {/* Overlay visual */}
           <div
             style={{
               position: "absolute",
               top: "50%",
               left: "50%",
               transform: "translate(-50%, -50%)",
-              width: "80%",
+              width: "70%",
               height: "40%",
               border: "2px solid #00ff00",
               boxShadow: "0 0 0 4000px rgba(0,0,0,0.5)",
               pointerEvents: "none",
             }}
-          />
+          ></div>
         </div>
 
         <button
