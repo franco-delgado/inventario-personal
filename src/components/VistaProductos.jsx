@@ -1,5 +1,6 @@
 import { DetalleProducto } from "./DetalleProducto";
 import { Scanner } from "./Scanner";
+import { useParams } from "react-router-dom"; // 👈 AGREGO IMPORTE FALTA: Clave para leer el usuario de la URL
 import { FormularioNuevo } from "./FormularioNuevo";
 
 export function VistaProductos({
@@ -21,21 +22,46 @@ export function VistaProductos({
   setCodigoEscaneado,
   codigoEscaneado,
 }) {
-  // --- LÓGICA DE FILTRADO LOCAL ---
+  // Capturamos el usuario de la URL silenciosamente
+  const { usuario } = useParams();
+
+  // --- LÓGICA DE FILTRADO LOCAL ULTRA SEGURA ---
   const productosAMostrar = Array.isArray(resultadosBusqueda)
     ? resultadosBusqueda.filter((prod) => {
-        // 1. Filtro por Nombre
+        // 1. FILTRO DE SEGURIDAD ABSOLUTO: Si el objeto no existe, no es un objeto, o no tiene la propiedad 'nombre', lo elimina.
+        if (
+          !prod ||
+          typeof prod !== "object" ||
+          !("nombre" in prod) ||
+          typeof prod.nombre !== "string"
+        ) {
+          return false;
+        }
+
+        // 2. AISLAMIENTO POR USUARIO
+        const usuarioLogueado = usuario ? usuario.trim().toUpperCase() : "";
+        const duenoDelProducto = prod.usuario
+          ? prod.usuario.trim().toUpperCase()
+          : "";
+
+        if (usuarioLogueado && duenoDelProducto !== usuarioLogueado) {
+          return false;
+        }
+
+        // 3. Filtro por Nombre del Medicamento
         if (
           busqueda.nombre &&
           !prod.nombre.toLowerCase().includes(busqueda.nombre.toLowerCase())
         ) {
           return false;
         }
-        // 2. Filtro por Código de Barras (cb)
+
+        // 4. Filtro por Código de Barras (cb)
         if (busqueda.cb && !prod.cb?.includes(busqueda.cb)) {
           return false;
         }
-        // 3. Filtro por Registro
+
+        // 5. Filtro por Registro
         if (
           busqueda.registro &&
           !prod.registro
@@ -44,7 +70,8 @@ export function VistaProductos({
         ) {
           return false;
         }
-        // 4. Filtro por Fecha (Mes: YYYY-MM)
+
+        // 6. Filtro por Fecha (Mes: YYYY-MM)
         if (
           busqueda.fecha &&
           (!prod.fechaVto || !prod.fechaVto.startsWith(busqueda.fecha))
@@ -52,18 +79,22 @@ export function VistaProductos({
           return false;
         }
 
-        return true; // Si pasa todos los filtros activos
+        return true;
       })
     : [];
 
   return (
     <div className="content-principal">
-      <DetalleProducto
-        producto={productoSeleccionado}
-        onClose={() => setProductoSeleccionado(null)}
-        todosLosProductos={productosAMostrar}
-        onActualizar={buscarEnSupabase}
-      />
+      {/* Solo mostramos la ventana si hay un producto seleccionado con nombre string real */}
+      {productoSeleccionado &&
+        typeof productoSeleccionado.nombre === "string" && (
+          <DetalleProducto
+            producto={productoSeleccionado}
+            onClose={() => setProductoSeleccionado(null)}
+            todosLosProductos={productosAMostrar}
+            onActualizar={buscarEnSupabase}
+          />
+        )}
 
       {scaneando && (
         <Scanner
@@ -84,7 +115,7 @@ export function VistaProductos({
           <div
             className="contenedor-busqueda"
             style={{
-              background: "#2a2a2a",
+              background: "#cecccc",
               padding: "15px",
               borderRadius: "10px",
               marginBottom: "15px",
@@ -173,15 +204,17 @@ export function VistaProductos({
             busqueda.registro ||
             busqueda.fecha ? (
               productosAMostrar.length > 0 ? (
-                productosAMostrar.map((prod) => (
-                  <button
-                    key={prod.id}
-                    className="btn-resultado"
-                    onClick={() => setProductoSeleccionado(prod)}
-                  >
-                    <span>{prod.nombre}</span>
-                  </button>
-                ))
+                productosAMostrar
+                  .filter((prod) => prod && typeof prod.nombre === "string") // Limpieza de elementos nulos previos al map
+                  .map((prod) => (
+                    <button
+                      key={prod.id || Math.random()}
+                      className="btn-resultado"
+                      onClick={() => setProductoSeleccionado(prod)}
+                    >
+                      <span>{prod.nombre}</span>
+                    </button>
+                  ))
               ) : (
                 <p
                   style={{
@@ -197,7 +230,7 @@ export function VistaProductos({
               <p
                 style={{
                   textAlign: "center",
-                  color: "#888",
+                  color: "#000000",
                   marginTop: "20px",
                 }}
               >

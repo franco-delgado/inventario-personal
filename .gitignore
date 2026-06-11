@@ -22,3 +22,13 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+.idea/
+android/
+.gradle/
+
+
+node_modules/
+dist/
+build/
+captures/

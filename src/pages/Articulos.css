@@ -1,11 +1,12 @@
 .content-principal {
-  background: #b1b1b1;
+  background: #db1e9c;
 }
 h1 {
+  margin-top: 0px;
   text-align: center;
 }
 .content-categorias {
-  background: #c7c5c5;
+  background: #dd81bf;
   padding: 20px;
   display: flex;
   flex-direction: column;
@@ -28,7 +29,7 @@ h1 {
 }
 
 .modal-content {
-  background-color: #999999; /* O el color de tu fondo */
+  background-color: #f884df; /* O el color de tu fondo */
   padding: 30px;
   border-radius: 15px;
   border: 1px solid #f5145f;
@@ -36,10 +37,28 @@ h1 {
   max-width: 500px;
   text-align: left;
 }
-
+.btn-categoria{
+  background-color: #c4c3c3;
+}
+.btn-eliminar-cat{
+  background-color: #c4c3c3;
+}
 .btn-cerrar {
   margin-top: 20px;
   width: 100%;
-  background-color: #8f8d8e;
+  background-color: #c4c3c3;
   border: solid 2px #000;
+}
+.btn-agregar-cat{
+  background-color: #c4c3c3;
+}
+.botonVTOgeneral{
+  color: #000;
+   margin: 10px;
+  background-color: #c4c3c3;
+}
+.panel-vencimientos{
+  padding: 20px;
+  border: 1px solid #ccc;
+  marginTop: 10px;
 }

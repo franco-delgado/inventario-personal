@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
+import { useParams } from "react-router-dom"; // 👈 AGREGA ESTO: Para capturar el usuario de la URL
 import "./componentes.css";
 
 export function DetalleProducto({
@@ -8,6 +9,9 @@ export function DetalleProducto({
   todosLosProductos,
   onActualizar,
 }) {
+  // Capturamos el usuario de la URL silenciosamente para aislar las búsquedas
+  const { usuario } = useParams();
+
   // Estado local para los inputs
   const [datosEditados, setDatosEditados] = useState({
     registro: producto?.registro || "",
@@ -28,14 +32,33 @@ export function DetalleProducto({
 
   if (!producto) return null;
 
-  // Lógica de artículos relacionados
-  const nombreBase = producto.nombre
+  // LÓGICA DE ARTÍCULOS RELACIONADOS PROTEGIDA Y FILTRADA POR USUARIO
+  const nombreBase = producto?.nombre
     ? producto.nombre.split(" ").slice(0, 2).join(" ").toLowerCase()
     : "";
-  const relacionados = (todosLosProductos || []).filter(
-    (item) =>
-      item.nombre.toLowerCase().includes(nombreBase) && item.id !== producto.id,
-  );
+
+  const relacionados = Array.isArray(todosLosProductos)
+    ? todosLosProductos.filter((item) => {
+        // 1. Verifica estrictamente que el ítem sea válido y posea la propiedad nombre
+        if (!item || !item.nombre) return false;
+
+        // 2. FILTRO DE USUARIO: Compara contra la columna 'usuario' de la base de datos para no mezclar las cosas
+        const usuarioActual = usuario ? usuario.trim().toUpperCase() : "";
+        const usuarioProducto = item.usuario
+          ? item.usuario.trim().toUpperCase()
+          : "";
+
+        if (usuarioActual && usuarioProducto !== usuarioActual) {
+          return false; // Descarta si pertenece a otra cuenta
+        }
+
+        // Evita duplicar el producto actual en la lista de relacionados
+        return (
+          item.nombre.toLowerCase().includes(nombreBase) &&
+          item.id !== producto.id
+        );
+      })
+    : [];
 
   // Función para actualizar un solo campo
   const actualizarCampoUnico = async (nombreColumna, valor) => {
@@ -43,7 +66,7 @@ export function DetalleProducto({
       const valorFinal = nombreColumna === "stock" ? parseInt(valor) : valor;
 
       const { error } = await supabase
-        .from("productos-farmacia")
+        .from("productos-farmacia") // Nombre de tu tabla de medicamentos
         .update({ [nombreColumna]: valorFinal })
         .eq("id", producto.id);
 
@@ -202,7 +225,6 @@ export function DetalleProducto({
           </button>
         </div>
 
-        {/* AQUÍ ESTABA EL ERROR: He quitado la condición !editando */}
         {relacionados.length > 0 && (
           <div
             className="seccion-relacionados"
@@ -218,12 +240,14 @@ export function DetalleProducto({
             >
               Artículos relacionados:
             </p>
-            {relacionados.map((rel) => (
-              <div key={rel.id} className="art-en-ventana">
-                • {rel.nombre} / Stock: {rel.stock} / VTO:{" "}
-                {rel.fechaVto || "N/A"}
-              </div>
-            ))}
+            {relacionados
+              .filter((rel) => rel && rel.nombre)
+              .map((rel) => (
+                <div key={rel.id || Math.random()} className="art-en-ventana">
+                  • {rel.nombre} / Stock: {rel.stock} / VTO:{" "}
+                  {rel.fechaVto || "N/A"}
+                </div>
+              ))}
           </div>
         )}
 
