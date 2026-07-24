@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "../lib/supabase"; // Verifica que la ruta a tu cliente sea correcta
+import { db } from "../lib/firebase"; // Importamos el cliente de Firebase
+import { ref, get } from "firebase/database";
 import "./Login.css"; // Importamos los estilos estéticos
 
 const Login = () => {
@@ -22,30 +23,49 @@ const Login = () => {
     setLoading(true);
 
     try {
-      // Consultamos la tabla "usuarios-farmacia"
-      // .toUpperCase() asegura la coincidencia si en la base de datos está en mayúsculas
-      const { data, error } = await supabase
-        .from("usuarios-farmacia")
-        .select("*")
-        .eq("usuario", user.trim().toUpperCase())
-        .eq("contraseña", pass.trim())
-        .maybeSingle(); // Maneja de forma segura si no encuentra ninguna fila
+      // Obtenemos la referencia al nodo "usuarios-farmacia"
+      const usuariosRef = ref(db, "usuarios-farmacia");
+      const snapshot = await get(usuariosRef);
 
-      if (error) {
-        console.error(error);
-        setErrorMsg("Error al conectar con la base de datos.");
-      } else if (!data) {
+      if (!snapshot.exists()) {
+        setErrorMsg("Usuario o contraseña incorrectos.");
+        setLoading(false);
+        return;
+      }
+
+      const data = snapshot.val();
+      
+      // Firebase guarda datos como un Array o un Objeto según la estructura del JSON.
+      // Convertimos los usuarios a una lista para buscar la coincidencia.
+      const listaUsuarios = Array.isArray(data)
+        ? data
+        : Object.values(data);
+
+      const usuarioIngresado = user.trim().toUpperCase();
+      const passwordIngresada = pass.trim();
+
+      // Buscamos coincidencia de usuario y contraseña
+      const usuarioEncontrado = listaUsuarios.find(
+        (u) =>
+          u &&
+          u.usuario &&
+          u.usuario.toString().toUpperCase() === usuarioIngresado &&
+          u.contraseña &&
+          u.contraseña.toString() === passwordIngresada
+      );
+
+      if (!usuarioEncontrado) {
         setErrorMsg("Usuario o contraseña incorrectos.");
       } else {
         // 1. CREAMOS LA SESIÓN MANUALMENTE (Guardamos una marca en el localStorage)
-        // Guardamos un texto cualquiera (puede ser un "true" o el mismo id del usuario)
         localStorage.setItem("token", "sesion_activa_farmacia");
-        
+
+        const nombreUsuario = usuarioEncontrado.usuario.toString().toLowerCase();
         // Guardamos también el nombre por si lo necesitas en otros componentes
-        localStorage.setItem("usuario", data.usuario.toLowerCase());
+        localStorage.setItem("usuario", nombreUsuario);
 
         // 2. Login exitoso: Redirige a articulos pasando el usuario en la URL
-        navigate(`/articulos/${data.usuario.toLowerCase()}`);
+        navigate(`/articulos/${nombreUsuario}`);
       }
     } catch (err) {
       console.error("Error inesperado:", err);

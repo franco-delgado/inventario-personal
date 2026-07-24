@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { supabase } from "../lib/supabase";
-import { useParams } from "react-router-dom"; // 👈 AGREGA ESTO: Para capturar el usuario de la URL
+import { db } from "../lib/firebase"; // 👈 Cliente de Firebase
+import { ref, update, remove } from "firebase/database";
+import { useParams } from "react-router-dom";
 import "./componentes.css";
 
 export function DetalleProducto({
@@ -42,7 +43,7 @@ export function DetalleProducto({
         // 1. Verifica estrictamente que el ítem sea válido y posea la propiedad nombre
         if (!item || !item.nombre) return false;
 
-        // 2. FILTRO DE USUARIO: Compara contra la columna 'usuario' de la base de datos para no mezclar las cosas
+        // 2. FILTRO DE USUARIO: Compara contra el atributo 'usuario' para no mezclar las cuentas
         const usuarioActual = usuario ? usuario.trim().toUpperCase() : "";
         const usuarioProducto = item.usuario
           ? item.usuario.trim().toUpperCase()
@@ -60,38 +61,36 @@ export function DetalleProducto({
       })
     : [];
 
-  // Función para actualizar un solo campo
+  // Función para actualizar un solo campo en Firebase Realtime Database
   const actualizarCampoUnico = async (nombreColumna, valor) => {
     try {
-      const valorFinal = nombreColumna === "stock" ? parseInt(valor) : valor;
+      const valorFinal = nombreColumna === "stock" ? parseInt(valor) || 0 : valor;
 
-      const { error } = await supabase
-        .from("productos-farmacia") // Nombre de tu tabla de medicamentos
-        .update({ [nombreColumna]: valorFinal })
-        .eq("id", producto.id);
+      // Referencia directa al nodo del producto específico mediante su id/key
+      const productoRef = ref(db, `productos-farmacia/${producto.id}`);
 
-      if (error) throw error;
+      await update(productoRef, {
+        [nombreColumna]: valorFinal,
+      });
 
       alert(`${nombreColumna.toUpperCase()} actualizado correctamente`);
       if (onActualizar) onActualizar();
     } catch (err) {
-      alert("Error: " + err.message);
+      alert("Error al actualizar: " + err.message);
     }
   };
 
+  // Función para eliminar el producto en Firebase Realtime Database
   const handleEliminar = async () => {
     if (window.confirm(`¿Eliminar ${producto.nombre}?`)) {
       try {
-        const { error } = await supabase
-          .from("productos-farmacia")
-          .delete()
-          .eq("id", producto.id);
+        const productoRef = ref(db, `productos-farmacia/${producto.id}`);
+        await remove(productoRef);
 
-        if (error) throw error;
         onClose();
         if (onActualizar) onActualizar();
       } catch (err) {
-        alert(err.message);
+        alert("Error al eliminar: " + err.message);
       }
     }
   };
@@ -127,7 +126,7 @@ export function DetalleProducto({
               }
               style={{ flex: 1 }}
             />
-            {datosEditados.registro !== producto.registro && (
+            {datosEditados.registro !== (producto.registro || "") && (
               <button
                 className="btn-guardar"
                 onClick={() =>
@@ -160,7 +159,7 @@ export function DetalleProducto({
               }
               style={{ flex: 1 }}
             />
-            {parseInt(datosEditados.stock) !== parseInt(producto.stock) && (
+            {parseInt(datosEditados.stock) !== parseInt(producto.stock || 0) && (
               <button
                 className="btn-guardar"
                 onClick={() =>

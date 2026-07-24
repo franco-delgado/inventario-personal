@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom"; // 👈 AGREGO IMPORTACIÓN: Clave para capturar el usuario
-import { supabase } from "../lib/supabase.js";
+import { useParams } from "react-router-dom";
+import { db } from "../lib/firebase.js"; // 👈 Cliente de Firebase
+import { ref, get, push, set, remove } from "firebase/database";
 import { VistaProductos } from "../components/VistaProductos.jsx";
 import "./Articulos.css";
 
@@ -12,19 +13,38 @@ function Articulos() {
   const [categorias, setCategorias] = useState([]);
   const [cargandoCategorias, setCargandoCategorias] = useState(true);
 
-  // --- 1. CARGAR CATEGORÍAS DESDE SUPABASE FILTRADAS POR USUARIO ---
+  // --- 1. CARGAR CATEGORÍAS DESDE FIREBASE FILTRADAS POR USUARIO ---
   const fetchCategorias = async () => {
     if (!usuario) return;
     try {
       setCargandoCategorias(true);
-      const { data, error } = await supabase
-        .from("categoria-farmacia")
-        .select("*")
-        .eq("usuario", usuario.toUpperCase()) // 👈 AISLAMIENTO: Trae solo las categorías de este usuario
-        .order("categoria", { ascending: true });
+      const catRef = ref(db, "categoria-farmacia");
+      const snapshot = await get(catRef);
 
-      if (error) throw error;
-      setCategorias(data || []);
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        
+        // Convertimos el objeto/array de Firebase a un formato uniforme con ID
+        const lista = Object.keys(data).map((key) => ({
+          id: key,
+          ...data[key],
+        }));
+
+        // Filtramos por usuario y ordenamos por nombre de categoría
+        const filtradas = lista
+          .filter(
+            (c) =>
+              c.usuario &&
+              c.usuario.toString().toUpperCase() === usuario.toUpperCase()
+          )
+          .sort((a, b) =>
+            (a.categoria || "").localeCompare(b.categoria || "")
+          );
+
+        setCategorias(filtradas);
+      } else {
+        setCategorias([]);
+      }
     } catch (err) {
       console.error("Error cargando categorías:", err.message);
     } finally {
@@ -36,7 +56,7 @@ function Articulos() {
     fetchCategorias();
   }, [usuario]);
 
-  // --- 2. AGREGAR CATEGORÍA A SUPABASE ASOCIADA AL USUARIO ---
+  // --- 2. AGREGAR CATEGORÍA A FIREBASE ASOCIADA AL USUARIO ---
   const agregarCategoria = async () => {
     if (!usuario) return;
     const nueva = prompt("Nombre de la nueva categoría:");
@@ -49,32 +69,28 @@ function Articulos() {
     }
 
     try {
-      const { error } = await supabase.from("categoria-farmacia").insert([
-        {
-          categoria: categoriaLimpio,
-          usuario: usuario.toUpperCase(), // 👈 Vincula la nueva categoría a tu usuario
-        },
-      ]);
+      const catRef = ref(db, "categoria-farmacia");
+      const nuevaCatRef = push(catRef); // Genera una clave única automáticamente
 
-      if (error) throw error;
+      await set(nuevaCatRef, {
+        categoria: categoriaLimpio,
+        usuario: usuario.toUpperCase(),
+      });
+
       fetchCategorias();
     } catch (err) {
       alert("Error al guardar: " + err.message);
     }
   };
 
-  // --- 3. ELIMINAR CATEGORÍA DE SUPABASE ---
+  // --- 3. ELIMINAR CATEGORÍA DE FIREBASE ---
   const eliminarCategoria = async (id, categoria, e) => {
     e.stopPropagation();
     if (!window.confirm(`¿Seguro que quieres eliminar "${categoria}"?`)) return;
 
     try {
-      const { error } = await supabase
-        .from("categoria-farmacia")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
+      const catRef = ref(db, `categoria-farmacia/${id}`);
+      await remove(catRef);
       fetchCategorias();
     } catch (err) {
       alert("No se pudo eliminar: " + err.message);
@@ -88,50 +104,79 @@ function Articulos() {
     registro: "",
     fecha: "",
   });
+
   // Estados para la funcionalidad de Vencimientos
-const [mostrandoVencimientos, setMostrandoVencimientos] = useState(false);
-const [productosVencimiento, setProductosVencimiento] = useState([]);
-const [filtroFecha, setFiltroFecha] = useState({ 
-  anio: new Date().getFullYear(), 
-  mes: (new Date().getMonth() + 1).toString().padStart(2, '0') 
-});
+  const [mostrandoVencimientos, setMostrandoVencimientos] = useState(false);
+  const [productosVencimiento, setProductosVencimiento] = useState([]);
+  const [filtroFecha, setFiltroFecha] = useState({
+    anio: new Date().getFullYear().toString(),
+    mes: (new Date().getMonth() + 1).toString().padStart(2, "0"),
+  });
 
   const [resultadosBusqueda, setResultadosBusqueda] = useState([]);
   const [productoSeleccionado, setProductoSeleccionado] = useState(null);
-  const [mostrandoFormularioNuevo, setMostrandoFormularioNuevo] =
-    useState(false);
+  const [mostrandoFormularioNuevo, setMostrandoFormularioNuevo] = useState(false);
   const [scaneando, setScaneando] = useState(false);
   const [inputDestino, setInputDestino] = useState("");
   const [codigoEscaneado, setCodigoEscaneado] = useState("");
 
-  // --- BÚSQUEDA DE PRODUCTOS ULTRA FILTRADA POR USUARIO Y CATEGORÍA ---
-  const buscarEnSupabase = async () => {
-    if (!usuario) return;
-
-    // Si los campos de búsqueda están vacíos, traemos todos los artículos de esta categoría de forma segura
-    let query = supabase
-      .from("productos-farmacia")
-      .select("*")
-      .eq("categoria", categoriaSeleccionada)
-      .eq("usuario", usuario.toUpperCase()); // 👈 CLAVE CENTRAL: Trae solo lo que le pertenece al usuario logueado
-
-    if (busqueda.nombre) query = query.ilike("nombre", `%${busqueda.nombre}%`);
-    if (busqueda.cb) query = query.eq("cb", busqueda.cb);
-    if (busqueda.registro)
-      query = query.ilike("registro", `%${busqueda.registro}%`);
+  // --- BÚSQUEDA DE PRODUCTOS FILTRADA POR USUARIO Y CATEGORÍA ---
+  const buscarEnFirebase = async () => {
+    if (!usuario || !categoriaSeleccionada) return;
 
     try {
-      const { data, error } = await query;
-      if (error) throw error;
-      setResultadosBusqueda(data || []);
+      const prodRef = ref(db, "productos-farmacia");
+      const snapshot = await get(prodRef);
+
+      if (!snapshot.exists()) {
+        setResultadosBusqueda([]);
+        return;
+      }
+
+      const data = snapshot.val();
+      const lista = Object.keys(data).map((key) => ({
+        id: key,
+        ...data[key],
+      }));
+
+      // Filtramos en memoria por usuario y categoría seleccionada
+      let filtrados = lista.filter(
+        (p) =>
+          p.usuario &&
+          p.usuario.toString().toUpperCase() === usuario.toUpperCase() &&
+          p.categoria === categoriaSeleccionada
+      );
+
+      // Filtros opcionales por campos de búsqueda
+      if (busqueda.nombre) {
+        filtrados = filtrados.filter(
+          (p) =>
+            p.nombre &&
+            p.nombre.toLowerCase().includes(busqueda.nombre.toLowerCase())
+        );
+      }
+      if (busqueda.cb) {
+        filtrados = filtrados.filter(
+          (p) => p.cb && p.cb.toString() === busqueda.cb.toString()
+        );
+      }
+      if (busqueda.registro) {
+        filtrados = filtrados.filter(
+          (p) =>
+            p.registro &&
+            p.registro.toLowerCase().includes(busqueda.registro.toLowerCase())
+        );
+      }
+
+      setResultadosBusqueda(filtrados);
     } catch (err) {
-      console.error(err.message);
+      console.error("Error buscando productos:", err.message);
     }
   };
 
   // Efecto que dispara la búsqueda al tipear o cambiar de categoría
   useEffect(() => {
-    buscarEnSupabase();
+    buscarEnFirebase();
   }, [busqueda, categoriaSeleccionada, usuario]);
 
   // --- HANDLERS ---
@@ -147,56 +192,66 @@ const [filtroFecha, setFiltroFecha] = useState({
   const handleGuardar = async (productoData) => {
     if (!usuario) return;
     try {
-      const { error } = await supabase.from("productos-farmacia").insert([
-        {
-          ...productoData,
-          nombre: productoData.nombre.toUpperCase().trim(),
-          categoria: categoriaSeleccionada,
-          stock: parseInt(productoData.stock) || 0,
-          usuario: usuario.toUpperCase(), // 👈 Vincula el nuevo producto de por vida al usuario activo
-        },
-      ]);
-      if (error) throw error;
+      const prodRef = ref(db, "productos-farmacia");
+      const nuevoProdRef = push(prodRef);
+
+      await set(nuevoProdRef, {
+        ...productoData,
+        nombre: productoData.nombre.toUpperCase().trim(),
+        categoria: categoriaSeleccionada,
+        stock: parseInt(productoData.stock) || 0,
+        usuario: usuario.toUpperCase(),
+      });
+
       alert("Producto Guardado");
       setMostrandoFormularioNuevo(false);
       setBusqueda({ nombre: "", cb: "", registro: "", fecha: "" });
-      buscarEnSupabase(); // Recarga la lista actual
+      buscarEnFirebase();
     } catch (err) {
-      alert(err.message);
+      alert("Error guardando producto: " + err.message);
     }
   };
 
-  //NUEVA FUNCION DE BUSQUEDA POR FECHA
-const buscarVencimientos = async () => {
-  if (!usuario) return;
+  // --- BUSCAR PRODUCTOS POR VENCIMIENTO ---
+  const buscarVencimientos = async () => {
+    if (!usuario) return;
 
-  // Calculamos el inicio del mes seleccionado
-  const inicioMes = `${filtroFecha.anio}-${filtroFecha.mes}-01`;
-  
-  // Calculamos el inicio del mes siguiente para el límite superior
-  let siguienteMes = parseInt(filtroFecha.mes) + 1;
-  let anioSiguiente = parseInt(filtroFecha.anio);
-  if (siguienteMes > 12) {
-    siguienteMes = 1;
-    anioSiguiente += 1;
-  }
-  const finMes = `${anioSiguiente}-${siguienteMes.toString().padStart(2, '0')}-01`;
+    const anio = filtroFecha.anio;
+    const mes = filtroFecha.mes.toString().padStart(2, "0");
+    const prefijoFecha = `${anio}-${mes}`; // Coincide con YYYY-MM
 
-  try {
-    const { data, error } = await supabase
-      .from("productos-farmacia")
-      .select("*")
-      .eq("usuario", usuario.toUpperCase()) // Importante: solo del usuario
-      .gte("fechaVto", inicioMes)
-      .lt("fechaVto", finMes)
-      .order("fechaVto", { ascending: true });
+    try {
+      const prodRef = ref(db, "productos-farmacia");
+      const snapshot = await get(prodRef);
 
-    if (error) throw error;
-    setProductosVencimiento(data || []);
-  } catch (err) {
-    alert("Error al buscar vencimientos: " + err.message);
-  }
-};
+      if (!snapshot.exists()) {
+        setProductosVencimiento([]);
+        return;
+      }
+
+      const data = snapshot.val();
+      const lista = Object.keys(data).map((key) => ({
+        id: key,
+        ...data[key],
+      }));
+
+      // Filtramos por usuario y si la fecha de vencimiento empieza con YYYY-MM
+      const vtos = lista
+        .filter(
+          (p) =>
+            p.usuario &&
+            p.usuario.toString().toUpperCase() === usuario.toUpperCase() &&
+            p.fechaVto &&
+            p.fechaVto.startsWith(prefijoFecha)
+        )
+        .sort((a, b) => (a.fechaVto || "").localeCompare(b.fechaVto || ""));
+
+      setProductosVencimiento(vtos);
+    } catch (err) {
+      alert("Error al buscar vencimientos: " + err.message);
+    }
+  };
+
   // --- VISTA DE SELECCIÓN DE CATEGORÍA ---
   if (!categoriaSeleccionada) {
     return (
@@ -227,33 +282,62 @@ const buscarVencimientos = async () => {
             </button>
           </div>
         )}
+
         <div className="busquedaVTO">
-          <button className="botonVTOgeneral" onClick={() => setMostrandoVencimientos(!mostrandoVencimientos)}>
+          <button
+            className="botonVTOgeneral"
+            onClick={() => setMostrandoVencimientos(!mostrandoVencimientos)}
+          >
             {mostrandoVencimientos ? "Volver al Inventario" : "Próximos a vencer"}
           </button>
           {mostrandoVencimientos && (
             <div className="panel-vencimientos">
               <h3>Filtrar por Vencimiento</h3>
-                <input 
-                  type="number" value={filtroFecha.anio} 
-                  onChange={(e) => setFiltroFecha({...filtroFecha, anio: e.target.value})} 
-                />
-              <select value={filtroFecha.mes} onChange={(e) => setFiltroFecha({...filtroFecha, mes: e.target.value})}>
-                {['01','02','03','04','05','06','07','08','09','10','11','12'].map(m => 
-                  <option key={m} value={m}>{m}</option>
-                )}
+              <input
+                type="number"
+                value={filtroFecha.anio}
+                onChange={(e) =>
+                  setFiltroFecha({ ...filtroFecha, anio: e.target.value })
+                }
+              />
+              <select
+                value={filtroFecha.mes}
+                onChange={(e) =>
+                  setFiltroFecha({ ...filtroFecha, mes: e.target.value })
+                }
+              >
+                {[
+                  "01",
+                  "02",
+                  "03",
+                  "04",
+                  "05",
+                  "06",
+                  "07",
+                  "08",
+                  "09",
+                  "10",
+                  "11",
+                  "12",
+                ].map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
               </select>
-                <button onClick={buscarVencimientos}>Buscar</button>
-                <ul>
-                  {productosVencimiento.map(p => (
-                    <li key={p.id}>
-                      {p.nombre} - <strong>Vence: {p.fechaVto}</strong>
-                    </li>
-                  ))}
-                  {productosVencimiento.length === 0 && <p>No hay productos que venzan en esta fecha.</p>}
-                </ul>
-        </div>
-)}
+              <button onClick={buscarVencimientos}>Buscar</button>
+              <ul>
+                {productosVencimiento.map((p) => (
+                  <li key={p.id}>
+                    {p.nombre} - <strong>Vence: {p.fechaVto}</strong>
+                  </li>
+                ))}
+                {productosVencimiento.length === 0 && (
+                  <p>No hay productos que venzan en esta fecha.</p>
+                )}
+              </ul>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -268,7 +352,7 @@ const buscarVencimientos = async () => {
         productoSeleccionado={productoSeleccionado}
         setProductoSeleccionado={setProductoSeleccionado}
         resultadosBusqueda={resultadosBusqueda}
-        buscarEnSupabase={buscarEnSupabase}
+        buscarEnSupabase={buscarEnFirebase} // Mantenemos la prop con el handler de Firebase
         scaneando={scaneando}
         setScaneando={setScaneando}
         handleScanSuccess={handleScanSuccess}

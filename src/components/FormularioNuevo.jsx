@@ -33,7 +33,11 @@ export function FormularioNuevo({
       alert("CB y Nombre son obligatorios");
       return;
     }
-    onGuardar(producto);
+    // Envía el producto formateado hacia el handler de guardar en Firebase (Padre)
+    onGuardar({
+      ...producto,
+      stock: parseInt(producto.stock) || 0,
+    });
   };
 
   return (
