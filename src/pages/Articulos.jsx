@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { db } from "../lib/firebase.js"; // 👈 Cliente de Firebase
 import { ref, get, push, set, remove } from "firebase/database";
 import { VistaProductos } from "../components/VistaProductos.jsx";
+import { exportarVencimientosAExcel } from "../utils/exportarExcel.js"; // Ajusta la ruta a tu carpeta
 import "./Articulos.css";
 
 function Articulos() {
@@ -326,6 +327,12 @@ function Articulos() {
                 ))}
               </select>
               <button onClick={buscarVencimientos}>Buscar</button>
+
+              {/* 👇 NUEVO BOTÓN DE EXCEL */}
+            <button onClick={() => exportarVencimientosAExcel(productosVencimiento)}>
+              Crear Excel
+            </button>
+
               <ul>
                 {productosVencimiento.map((p) => (
                   <li key={p.id}>
