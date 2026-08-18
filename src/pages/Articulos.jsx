@@ -4,6 +4,7 @@ import { db } from "../lib/firebase.js"; // 👈 Cliente de Firebase
 import { ref, get, push, set, remove } from "firebase/database";
 import { VistaProductos } from "../components/VistaProductos.jsx";
 import { exportarVencimientosAExcel } from "../utils/exportarExcel.js";
+import { useInventario } from "../hooks/useInventario.js"; // 👈 Importación del Hook
 import "./Articulos.css";
 
 function Articulos() {
@@ -13,6 +14,17 @@ function Articulos() {
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState(null);
   const [categorias, setCategorias] = useState([]);
   const [cargandoCategorias, setCargandoCategorias] = useState(true);
+
+  // --- INTEGRACIÓN DEL HOOK DE INVENTARIO ---
+  const {
+    productos,
+    cargando: cargandoProductos,
+    busqueda,
+    setBusqueda,
+    modoListaCompleta,
+    activarListaCompleta,
+    refrescar: buscarEnFirebase,
+  } = useInventario(usuario, categoriaSeleccionada);
 
   // --- 1. CARGAR CATEGORÍAS DESDE FIREBASE FILTRADAS POR USUARIO ---
   const fetchCategorias = async () => {
@@ -96,14 +108,6 @@ function Articulos() {
     }
   };
 
-  // --- ESTADOS DE PRODUCTOS ---
-  const [busqueda, setBusqueda] = useState({
-    nombre: "",
-    cb: "",
-    registro: "",
-    fecha: "",
-  });
-
   // Estados para la funcionalidad de Vencimientos
   const [mostrandoVencimientos, setMostrandoVencimientos] = useState(false);
   const [productosVencimiento, setProductosVencimiento] = useState([]);
@@ -112,68 +116,11 @@ function Articulos() {
     mes: (new Date().getMonth() + 1).toString().padStart(2, "0"),
   });
 
-  const [resultadosBusqueda, setResultadosBusqueda] = useState([]);
   const [productoSeleccionado, setProductoSeleccionado] = useState(null);
   const [mostrandoFormularioNuevo, setMostrandoFormularioNuevo] = useState(false);
   const [scaneando, setScaneando] = useState(false);
   const [inputDestino, setInputDestino] = useState("");
   const [codigoEscaneado, setCodigoEscaneado] = useState("");
-
-  // --- BÚSQUEDA DE PRODUCTOS FILTRADA POR USUARIO Y CATEGORÍA ---
-  const buscarEnFirebase = async () => {
-    if (!usuario || !categoriaSeleccionada) return;
-
-    try {
-      const prodRef = ref(db, "productos-farmacia");
-      const snapshot = await get(prodRef);
-
-      if (!snapshot.exists()) {
-        setResultadosBusqueda([]);
-        return;
-      }
-
-      const data = snapshot.val();
-      const lista = Object.keys(data).map((key) => ({
-        id: key,
-        ...data[key],
-      }));
-
-      let filtrados = lista.filter(
-        (p) =>
-          p.usuario &&
-          p.usuario.toString().toUpperCase() === usuario.toUpperCase() &&
-          p.categoria === categoriaSeleccionada
-      );
-
-      if (busqueda.nombre) {
-        filtrados = filtrados.filter(
-          (p) =>
-            p.nombre &&
-            p.nombre.toLowerCase().includes(busqueda.nombre.toLowerCase())
-        );
-      }
-      if (busqueda.cb) {
-        filtrados = filtrados.filter(
-          (p) => p.cb && p.cb.toString() === busqueda.cb.toString()
-        );
-      }
-      if (busqueda.registro) {
-        filtrados = filtrados.filter(
-          (p) =>
-            p.registro &&
-            p.registro.toLowerCase().includes(busqueda.registro.toLowerCase())
-        );
-      }
-
-      setResultadosBusqueda(filtrados);
-    } catch (err) {
-      console.error("Error buscando productos:", err.message);
-    }
-  };
-
-  useEffect(() => {
-    buscarEnFirebase();
-  }, [busqueda, categoriaSeleccionada, usuario]);
 
   // --- HANDLERS ---
   const handleScanSuccess = (codigo) => {
@@ -208,7 +155,7 @@ function Articulos() {
     }
   };
 
-  // --- BUSCAR PRODUCTOS POR VENCIMIENTO EN PANTALLA (SOLO VISTA REGULAR) ---
+  // --- BUSCAR PRODUCTOS POR VENCIMIENTO EN PANTALLA ---
   const buscarVencimientos = async () => {
     if (!usuario) return;
 
@@ -266,14 +213,12 @@ function Articulos() {
         ...data[key],
       }));
 
-      // Se obtienen TODOS los productos del usuario (sin filtrar por un único mes previo)
       const productosUsuario = listaCompleta.filter(
         (p) =>
           p.usuario &&
           p.usuario.toString().toUpperCase() === usuario.toUpperCase()
       );
 
-      // El framework exportarVencimientosAExcel se encarga de pedir el rango completo y filtrar
       exportarVencimientosAExcel(productosUsuario);
     } catch (err) {
       alert("Error al obtener productos para el Excel: " + err.message);
@@ -335,18 +280,8 @@ function Articulos() {
                 }
               >
                 {[
-                  "01",
-                  "02",
-                  "03",
-                  "04",
-                  "05",
-                  "06",
-                  "07",
-                  "08",
-                  "09",
-                  "10",
-                  "11",
-                  "12",
+                  "01", "02", "03", "04", "05", "06",
+                  "07", "08", "09", "10", "11", "12",
                 ].map((m) => (
                   <option key={m} value={m}>
                     {m}
@@ -354,8 +289,6 @@ function Articulos() {
                 ))}
               </select>
               <button onClick={buscarVencimientos}>Buscar</button>
-
-              {/* Botón desacoplado: Obtiene la lista global del usuario para que el framework evalúe todo el rango */}
               <button onClick={generarExcelDirecto}>Crear Excel</button>
 
               <ul>
@@ -376,29 +309,33 @@ function Articulos() {
   }
 
   // --- VISTA DE PRODUCTOS ---
-  if (categoriaSeleccionada) {
-    return (
-      <VistaProductos
-        categoriaSeleccionada={categoriaSeleccionada}
-        setCategoriaSeleccionada={setCategoriaSeleccionada}
-        productoSeleccionado={productoSeleccionado}
-        setProductoSeleccionado={setProductoSeleccionado}
-        resultadosBusqueda={resultadosBusqueda}
-        buscarEnSupabase={buscarEnFirebase}
-        scaneando={scaneando}
-        setScaneando={setScaneando}
-        handleScanSuccess={handleScanSuccess}
-        busqueda={busqueda}
-        setBusqueda={setBusqueda}
-        setInputDestino={setInputDestino}
-        mostrandoFormularioNuevo={mostrandoFormularioNuevo}
-        setMostrandoFormularioNuevo={setMostrandoFormularioNuevo}
-        handleGuardar={handleGuardar}
-        setCodigoEscaneado={setCodigoEscaneado}
-        codigoEscaneado={codigoEscaneado}
-      />
-    );
-  }
+  return (
+    <VistaProductos
+      categoriaSeleccionada={categoriaSeleccionada}
+      setCategoriaSeleccionada={setCategoriaSeleccionada}
+      productoSeleccionado={productoSeleccionado}
+      setProductoSeleccionado={setProductoSeleccionado}
+      
+      // Props que vienen del Hook `useInventario`
+      resultadosBusqueda={productos}
+      cargandoProductos={cargandoProductos}
+      busqueda={busqueda}
+      setBusqueda={setBusqueda}
+      modoListaCompleta={modoListaCompleta}
+      activarListaCompleta={activarListaCompleta}
+      buscarEnSupabase={buscarEnFirebase}
+
+      scaneando={scaneando}
+      setScaneando={setScaneando}
+      handleScanSuccess={handleScanSuccess}
+      setInputDestino={setInputDestino}
+      mostrandoFormularioNuevo={mostrandoFormularioNuevo}
+      setMostrandoFormularioNuevo={setMostrandoFormularioNuevo}
+      handleGuardar={handleGuardar}
+      setCodigoEscaneado={setCodigoEscaneado}
+      codigoEscaneado={codigoEscaneado}
+    />
+  );
 }
 
 export default Articulos;

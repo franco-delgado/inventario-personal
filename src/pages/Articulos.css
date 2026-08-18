@@ -1,12 +1,12 @@
 .content-principal {
-  background: #db1e9c;
+  background: #678ae9;
 }
 h1 {
   margin-top: 0px;
   text-align: center;
 }
 .content-categorias {
-  background: #dd81bf;
+  background: #678ae9;
   padding: 20px;
   display: flex;
   flex-direction: column;

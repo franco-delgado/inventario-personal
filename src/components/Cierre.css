@@ -1,0 +1,66 @@
+/* Barra de navegación principal con Grid para centrado perfecto */
+.cierre-navbar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr; /* 3 columnas igualadas */
+  align-items: center;
+  padding: 12px 20px;
+  background-color: #678ae9;
+  color: #ffffff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Espaciador fantasma para equilibrar el espacio a la izquierda */
+.navbar-spacer {
+  visibility: hidden;
+}
+
+/* Título de la farmacia perfectamente centrado */
+.navbar-brand {
+  font-size: 24px;
+  font-weight: bold;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Botón alineado totalmente a la derecha */
+.navbar-logout-btn {
+  justify-self: end;
+  background-color: #c4c3c3;
+  color: #000000;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.navbar-logout-btn:hover {
+  background-color: #b0afaf;
+}
+
+.navbar-logout-btn:active {
+  transform: scale(0.98);
+}
+
+/* Ajustes Adaptables (Móviles) */
+@media (max-width: 600px) {
+  .cierre-navbar {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 15px;
+  }
+
+  .navbar-spacer {
+    display: none;
+  }
+
+  .navbar-brand {
+    font-size: 20px;
+  }
+
+  .navbar-logout-btn {
+    width: 100%;
+  }
+}

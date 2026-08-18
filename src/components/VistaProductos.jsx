@@ -1,7 +1,8 @@
 import { DetalleProducto } from "./DetalleProducto";
 import { Scanner } from "./Scanner";
-import { useParams } from "react-router-dom"; // 👈 AGREGO IMPORTE FALTA: Clave para leer el usuario de la URL
+import { useParams } from "react-router-dom";
 import { FormularioNuevo } from "./FormularioNuevo";
+import "./VistaProductos.css";
 
 export function VistaProductos({
   categoriaSeleccionada,
@@ -21,14 +22,20 @@ export function VistaProductos({
   handleGuardar,
   setCodigoEscaneado,
   codigoEscaneado,
+  activarListaCompleta,
+  modoListaCompleta,
 }) {
-  // Capturamos el usuario de la URL silenciosamente
   const { usuario } = useParams();
 
-  // --- LÓGICA DE FILTRADO LOCAL ULTRA SEGURA ---
+  const hayTextoEnBuscador = Boolean(
+    (busqueda.nombre && busqueda.nombre.trim() !== "") ||
+    (busqueda.cb && busqueda.cb.trim() !== "") ||
+    (busqueda.registro && busqueda.registro.trim() !== "") ||
+    (busqueda.fecha && busqueda.fecha.trim() !== "")
+  );
+
   const productosAMostrar = Array.isArray(resultadosBusqueda)
     ? resultadosBusqueda.filter((prod) => {
-        // 1. FILTRO DE SEGURIDAD ABSOLUTO: Si el objeto no existe, no es un objeto, o no tiene la propiedad 'nombre', lo elimina.
         if (
           !prod ||
           typeof prod !== "object" ||
@@ -38,7 +45,6 @@ export function VistaProductos({
           return false;
         }
 
-        // 2. AISLAMIENTO POR USUARIO
         const usuarioLogueado = usuario ? usuario.trim().toUpperCase() : "";
         const duenoDelProducto = prod.usuario
           ? prod.usuario.trim().toUpperCase()
@@ -48,44 +54,43 @@ export function VistaProductos({
           return false;
         }
 
-        // 3. Filtro por Nombre del Medicamento
-        if (
-          busqueda.nombre &&
-          !prod.nombre.toLowerCase().includes(busqueda.nombre.toLowerCase())
-        ) {
-          return false;
-        }
+        if (!modoListaCompleta && hayTextoEnBuscador) {
+          if (
+            busqueda.nombre &&
+            !prod.nombre.toLowerCase().includes(busqueda.nombre.toLowerCase())
+          ) {
+            return false;
+          }
 
-        // 4. Filtro por Código de Barras (cb)
-        if (busqueda.cb && !prod.cb?.includes(busqueda.cb)) {
-          return false;
-        }
+          if (busqueda.cb && !prod.cb?.toString().includes(busqueda.cb)) {
+            return false;
+          }
 
-        // 5. Filtro por Registro
-        if (
-          busqueda.registro &&
-          !prod.registro
-            ?.toLowerCase()
-            .includes(busqueda.registro.toLowerCase())
-        ) {
-          return false;
-        }
+          if (
+            busqueda.registro &&
+            !prod.registro
+              ?.toLowerCase()
+              .includes(busqueda.registro.toLowerCase())
+          ) {
+            return false;
+          }
 
-        // 6. Filtro por Fecha (Mes: YYYY-MM)
-        if (
-          busqueda.fecha &&
-          (!prod.fechaVto || !prod.fechaVto.startsWith(busqueda.fecha))
-        ) {
-          return false;
+          if (
+            busqueda.fecha &&
+            (!prod.fechaVto || !prod.fechaVto.startsWith(busqueda.fecha))
+          ) {
+            return false;
+          }
         }
 
         return true;
       })
     : [];
 
+  const mostrarLista = modoListaCompleta || hayTextoEnBuscador;
+
   return (
     <div className="content-principal">
-      {/* Solo mostramos la ventana si hay un producto seleccionado con nombre string real */}
       {productoSeleccionado &&
         typeof productoSeleccionado.nombre === "string" && (
           <DetalleProducto
@@ -108,21 +113,16 @@ export function VistaProductos({
           ← Categorías
         </button>
         <h1>{categoriaSeleccionada}</h1>
+        {/* Elemento de contrapeso para un centrado perfecto */}
+        <div className="header-spacer"></div>
       </div>
 
       {!mostrandoFormularioNuevo ? (
         <div className="pantalla-productos">
-          <div
-            className="contenedor-busqueda"
-            style={{
-              background: "#cecccc",
-              padding: "15px",
-              borderRadius: "10px",
-              marginBottom: "15px",
-            }}
-          >
+          {/* Panel de Búsqueda */}
+          <div className="contenedor-busqueda">
             <input
-              className="buscador"
+              className="buscador buscador-principal"
               placeholder="NOMBRE..."
               value={busqueda.nombre || ""}
               onChange={(e) => {
@@ -133,32 +133,34 @@ export function VistaProductos({
                   fecha: "",
                 });
               }}
-              style={{ width: "100%", marginBottom: "10px" }}
             />
 
-            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-              <input
-                className="buscador"
-                placeholder="CB..."
-                value={busqueda.cb || ""}
-                onChange={(e) => {
-                  setBusqueda({
-                    nombre: "",
-                    cb: e.target.value,
-                    registro: "",
-                    fecha: "",
-                  });
-                }}
-                style={{ flex: 1 }}
-              />
-              <button
-                onClick={() => {
-                  setScaneando(true);
-                  setInputDestino("busqueda");
-                }}
-              >
-                📸
-              </button>
+            <div className="grupo-filtros">
+              <div className="input-con-boton">
+                <input
+                  className="buscador"
+                  placeholder="CB..."
+                  value={busqueda.cb || ""}
+                  onChange={(e) => {
+                    setBusqueda({
+                      nombre: "",
+                      cb: e.target.value,
+                      registro: "",
+                      fecha: "",
+                    });
+                  }}
+                />
+                <button
+                  type="button"
+                  className="btn-escaneo"
+                  onClick={() => {
+                    setScaneando(true);
+                    setInputDestino("busqueda");
+                  }}
+                >
+                  📸
+                </button>
+              </div>
 
               <input
                 className="buscador"
@@ -172,12 +174,11 @@ export function VistaProductos({
                     fecha: "",
                   });
                 }}
-                style={{ flex: 1 }}
               />
 
               <input
                 type="month"
-                className="buscador"
+                className="buscador input-fecha"
                 value={
                   typeof busqueda.fecha === "string" &&
                   busqueda.fecha.length >= 7
@@ -192,49 +193,73 @@ export function VistaProductos({
                     fecha: e.target.value,
                   });
                 }}
-                style={{ flex: 1, minWidth: "150px" }}
               />
+
+              <button
+                type="button"
+                className="btn-mostrar-lista"
+                onClick={() => {
+                  if (typeof activarListaCompleta === "function") {
+                    activarListaCompleta();
+                  } else {
+                    console.error("activarListaCompleta no está definida.");
+                  }
+                }}
+              >
+                Mostrar lista
+              </button>
             </div>
           </div>
 
+          {/* Renderizado de la Tabla Responsiva */}
           <div className="lista-resultados">
-            {/* Comprobamos si hay algún texto en cualquiera de los campos */}
-            {busqueda.nombre ||
-            busqueda.cb ||
-            busqueda.registro ||
-            busqueda.fecha ? (
+            {mostrarLista ? (
               productosAMostrar.length > 0 ? (
-                productosAMostrar
-                  .filter((prod) => prod && typeof prod.nombre === "string") // Limpieza de elementos nulos previos al map
-                  .map((prod) => (
-                    <button
-                      key={prod.id || Math.random()}
-                      className="btn-resultado"
-                      onClick={() => setProductoSeleccionado(prod)}
-                    >
-                      <span>{prod.nombre}</span>
-                    </button>
-                  ))
+                <div className="tabla-contenedor">
+                  <table className="tabla-excel">
+                    <thead>
+                      <tr>
+                        <th>Registro</th>
+                        <th>Nombre</th>
+                        <th>Stock</th>
+                        <th>Fecha Vto.</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {productosAMostrar
+                        .filter((prod) => prod && typeof prod.nombre === "string")
+                        .map((prod) => (
+                          <tr
+                            key={prod.id || Math.random()}
+                            onClick={() => setProductoSeleccionado(prod)}
+                            className="fila-producto"
+                          >
+                            <td data-label="Registro">
+                              {prod.registro || "-"}
+                            </td>
+                            <td data-label="Nombre" className="col-nombre">
+                              {prod.nombre}
+                            </td>
+                            <td data-label="Cantidad / Stock" className="col-stock">
+                              {prod.stock ?? prod.cantidad ?? 0}
+                            </td>
+                            <td data-label="Fecha Vto.">
+                              {prod.fechaVto || prod.fecha || "-"}
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
               ) : (
-                <p
-                  style={{
-                    textAlign: "center",
-                    color: "#888",
-                    marginTop: "20px",
-                  }}
-                >
-                  No se encontraron productos.
+                <p className="mensaje-vacio">
+                  No se encontraron productos en esta categoría.
                 </p>
               )
             ) : (
-              <p
-                style={{
-                  textAlign: "center",
-                  color: "#000000",
-                  marginTop: "20px",
-                }}
-              >
-                Escribe algo para comenzar la búsqueda...
+              <p className="mensaje-inicial">
+                Escribe algo para comenzar la búsqueda o presiona{" "}
+                <strong>"Mostrar lista"</strong>...
               </p>
             )}
           </div>
