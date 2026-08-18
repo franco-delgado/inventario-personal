@@ -2,7 +2,7 @@ import * as XLSX from "xlsx";
 
 export const exportarVencimientosAExcel = (productos) => {
   if (!productos || productos.length === 0) {
-    return alert("No hay productos cargados para exportar.");
+    return alert("No hay productos cargados en la base de datos.");
   }
 
   // 1. Solicitamos el rango de fechas en formato DD-MM-YYYY
@@ -12,55 +12,79 @@ export const exportarVencimientosAExcel = (productos) => {
   const fechaFinStr = prompt("Ingrese la fecha FIN (DD-MM-YYYY):", "31-12-2026");
   if (!fechaFinStr) return;
 
-  // Convierte DD-MM-YYYY a un objeto Date real para poder comparar
-  const parseFecha = (str) => {
-    const partes = str.split("-");
+  // Convierte cadenas DD-MM-YYYY a Date real de JS sin problemas de zona horaria
+  const parseFechaPrompt = (str) => {
+    if (!str) return null;
+    const partes = str.trim().split(/[-/]/);
     if (partes.length !== 3) return null;
-    const [dia, mes, anio] = partes;
-    return new Date(`${anio}-${mes}-${dia}T00:00:00`);
+    const [dia, mes, anio] = partes.map((num) => parseInt(num, 10));
+    return new Date(anio, mes - 1, dia, 0, 0, 0);
   };
 
-  const fechaInicio = parseFecha(fechaInicioStr);
-  const fechaFin = parseFecha(fechaFinStr);
+  // Parsea fechas guardadas en Firebase (soporta YYYY-MM-DD y DD-MM-YYYY)
+  const parseFechaProducto = (str) => {
+    if (!str) return null;
+    const partes = str.trim().split(/[-/]/);
+    if (partes.length !== 3) return null;
+
+    // Si el primer elemento tiene 4 dígitos -> YYYY-MM-DD
+    if (partes[0].length === 4) {
+      const [anio, mes, dia] = partes.map((n) => parseInt(n, 10));
+      return new Date(anio, mes - 1, dia, 0, 0, 0);
+    }
+    // Si no -> DD-MM-YYYY
+    const [dia, mes, anio] = partes.map((n) => parseInt(n, 10));
+    return new Date(anio, mes - 1, dia, 0, 0, 0);
+  };
+
+  const fechaInicio = parseFechaPrompt(fechaInicioStr);
+  const fechaFin = parseFechaPrompt(fechaFinStr);
 
   if (!fechaInicio || !fechaFin || isNaN(fechaInicio.getTime()) || isNaN(fechaFin.getTime())) {
     return alert("Formato de fecha inválido. Debe ser DD-MM-YYYY.");
   }
 
-  // Ajustamos la hora fin al último segundo del día
-  fechaFin.setHours(23, 59, 59);
+  // Ajustamos el límite fin al final del día
+  fechaFin.setHours(23, 59, 59, 999);
 
-  // 2. Filtramos los productos que caen dentro del rango
+  // 2. Filtramos TODOS los productos recibidos en el rango seleccionado
   const productosFiltrados = productos.filter((p) => {
     if (!p.fechaVto) return false;
-    // Convierte p.fechaVto (que viene de Firebase como YYYY-MM-DD) a Date
-    const fVto = new Date(`${p.fechaVto}T00:00:00`);
+    const fVto = parseFechaProducto(p.fechaVto);
+    if (!fVto || isNaN(fVto.getTime())) return false;
     return fVto >= fechaInicio && fVto <= fechaFin;
   });
 
   if (productosFiltrados.length === 0) {
-    return alert("No se encontraron productos que venzan dentro del rango seleccionado.");
+    return alert(`No se encontraron productos que venzan entre ${fechaInicioStr} y ${fechaFinStr}.`);
   }
 
-  // Función auxiliar para convertir YYYY-MM-DD (Firebase) a DD-MM-YYYY
+  // Ordenar de menor a mayor por fecha de vencimiento
+  productosFiltrados.sort((a, b) => {
+    const fA = parseFechaProducto(a.fechaVto);
+    const fB = parseFechaProducto(b.fechaVto);
+    return fA - fB;
+  });
+
+  // Convierte cualquier formato a DD-MM-YYYY para la columna del Excel
   const formatearFechaLatino = (fechaVtoStr) => {
-    if (!fechaVtoStr) return "N/A";
-    const partes = fechaVtoStr.split("-"); // [YYYY, MM, DD]
-    if (partes.length < 3) return fechaVtoStr;
-    return `${partes[2]}-${partes[1]}-${partes[0]}`; // Retorna DD-MM-YYYY
+    const f = parseFechaProducto(fechaVtoStr);
+    if (!f || isNaN(f.getTime())) return fechaVtoStr || "N/A";
+    const dia = String(f.getDate()).padStart(2, "0");
+    const mes = String(f.getMonth() + 1).padStart(2, "0");
+    const anio = f.getFullYear();
+    return `${dia}-${mes}-${anio}`;
   };
 
-  // 3. Formateamos las columnas para el archivo Excel
+  // 3. Formateamos las columnas del Excel
   const datosExcel = productosFiltrados.map((item) => ({
-    "Producto": item.nombre || "Sin Nombre",
-    "Categoría": item.categoria || "N/A",
-    "Fecha Vencimiento": formatearFechaLatino(item.fechaVto), // 👈 Muestra DD-MM-YYYY
-    "Stock": item.stock || 0,
-    "Código de Barras": item.cb || "N/A",
     "Registro": item.registro || "N/A",
+    "Producto": item.nombre || "Sin Nombre",
+    "Stock": item.stock || 0,
+    "Fecha Vencimiento": formatearFechaLatino(item.fechaVto),
   }));
 
-  // 4. Generamos y descargamos el archivo Excel
+  // 4. Generamos y descargamos el Excel
   const hoja = XLSX.utils.json_to_sheet(datosExcel);
   const libro = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(libro, hoja, "Vencimientos");

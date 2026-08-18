@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { db } from "../lib/firebase.js"; // 👈 Cliente de Firebase
 import { ref, get, push, set, remove } from "firebase/database";
 import { VistaProductos } from "../components/VistaProductos.jsx";
-import { exportarVencimientosAExcel } from "../utils/exportarExcel.js"; // Ajusta la ruta a tu carpeta
+import { exportarVencimientosAExcel } from "../utils/exportarExcel.js";
 import "./Articulos.css";
 
 function Articulos() {
@@ -24,14 +24,12 @@ function Articulos() {
 
       if (snapshot.exists()) {
         const data = snapshot.val();
-        
-        // Convertimos el objeto/array de Firebase a un formato uniforme con ID
+
         const lista = Object.keys(data).map((key) => ({
           id: key,
           ...data[key],
         }));
 
-        // Filtramos por usuario y ordenamos por nombre de categoría
         const filtradas = lista
           .filter(
             (c) =>
@@ -71,7 +69,7 @@ function Articulos() {
 
     try {
       const catRef = ref(db, "categoria-farmacia");
-      const nuevaCatRef = push(catRef); // Genera una clave única automáticamente
+      const nuevaCatRef = push(catRef);
 
       await set(nuevaCatRef, {
         categoria: categoriaLimpio,
@@ -140,7 +138,6 @@ function Articulos() {
         ...data[key],
       }));
 
-      // Filtramos en memoria por usuario y categoría seleccionada
       let filtrados = lista.filter(
         (p) =>
           p.usuario &&
@@ -148,7 +145,6 @@ function Articulos() {
           p.categoria === categoriaSeleccionada
       );
 
-      // Filtros opcionales por campos de búsqueda
       if (busqueda.nombre) {
         filtrados = filtrados.filter(
           (p) =>
@@ -175,7 +171,6 @@ function Articulos() {
     }
   };
 
-  // Efecto que dispara la búsqueda al tipear o cambiar de categoría
   useEffect(() => {
     buscarEnFirebase();
   }, [busqueda, categoriaSeleccionada, usuario]);
@@ -213,13 +208,13 @@ function Articulos() {
     }
   };
 
-  // --- BUSCAR PRODUCTOS POR VENCIMIENTO ---
+  // --- BUSCAR PRODUCTOS POR VENCIMIENTO EN PANTALLA (SOLO VISTA REGULAR) ---
   const buscarVencimientos = async () => {
     if (!usuario) return;
 
     const anio = filtroFecha.anio;
     const mes = filtroFecha.mes.toString().padStart(2, "0");
-    const prefijoFecha = `${anio}-${mes}`; // Coincide con YYYY-MM
+    const prefijoFecha = `${anio}-${mes}`;
 
     try {
       const prodRef = ref(db, "productos-farmacia");
@@ -236,7 +231,6 @@ function Articulos() {
         ...data[key],
       }));
 
-      // Filtramos por usuario y si la fecha de vencimiento empieza con YYYY-MM
       const vtos = lista
         .filter(
           (p) =>
@@ -250,6 +244,39 @@ function Articulos() {
       setProductosVencimiento(vtos);
     } catch (err) {
       alert("Error al buscar vencimientos: " + err.message);
+    }
+  };
+
+  // --- GENERAR EXCEL COMPLETO INDEPENDIENTE DE LA VISTA ---
+  const generarExcelDirecto = async () => {
+    if (!usuario) return;
+
+    try {
+      const prodRef = ref(db, "productos-farmacia");
+      const snapshot = await get(prodRef);
+
+      if (!snapshot.exists()) {
+        alert("No hay productos cargados en la base de datos.");
+        return;
+      }
+
+      const data = snapshot.val();
+      const listaCompleta = Object.keys(data).map((key) => ({
+        id: key,
+        ...data[key],
+      }));
+
+      // Se obtienen TODOS los productos del usuario (sin filtrar por un único mes previo)
+      const productosUsuario = listaCompleta.filter(
+        (p) =>
+          p.usuario &&
+          p.usuario.toString().toUpperCase() === usuario.toUpperCase()
+      );
+
+      // El framework exportarVencimientosAExcel se encarga de pedir el rango completo y filtrar
+      exportarVencimientosAExcel(productosUsuario);
+    } catch (err) {
+      alert("Error al obtener productos para el Excel: " + err.message);
     }
   };
 
@@ -328,10 +355,8 @@ function Articulos() {
               </select>
               <button onClick={buscarVencimientos}>Buscar</button>
 
-              {/* 👇 NUEVO BOTÓN DE EXCEL */}
-            <button onClick={() => exportarVencimientosAExcel(productosVencimiento)}>
-              Crear Excel
-            </button>
+              {/* Botón desacoplado: Obtiene la lista global del usuario para que el framework evalúe todo el rango */}
+              <button onClick={generarExcelDirecto}>Crear Excel</button>
 
               <ul>
                 {productosVencimiento.map((p) => (
@@ -359,7 +384,7 @@ function Articulos() {
         productoSeleccionado={productoSeleccionado}
         setProductoSeleccionado={setProductoSeleccionado}
         resultadosBusqueda={resultadosBusqueda}
-        buscarEnSupabase={buscarEnFirebase} // Mantenemos la prop con el handler de Firebase
+        buscarEnSupabase={buscarEnFirebase}
         scaneando={scaneando}
         setScaneando={setScaneando}
         handleScanSuccess={handleScanSuccess}
