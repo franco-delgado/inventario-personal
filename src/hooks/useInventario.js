@@ -90,18 +90,22 @@ export function useInventario(usuario, categoriaSeleccionada) {
   };
 
   // Acción para el botón "Mostrar lista"
-  const activarListaCompleta = () => {
-    setBusqueda({ nombre: "", cb: "", registro: "", fecha: "" });
-    setModoListaCompleta(true);
-  };
-
+  const ListaCompleta = () => {
+  setModoListaCompleta((prev) => {
+    // Si se va a abrir (prev es false), limpiamos los filtros
+    if (!prev) {
+      setBusqueda({ nombre: "", cb: "", registro: "", fecha: "" });
+    }
+    return !prev; // Invierte el estado actual (true/false)
+  });
+};
   return {
     productos,
     cargando,
     busqueda,
     setBusqueda: actualizarBusqueda,
     modoListaCompleta,
-    activarListaCompleta,
+    ListaCompleta,
     hayFiltrosActivos,
     refrescar: cargarProductos,
   };

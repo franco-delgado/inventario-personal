@@ -22,7 +22,7 @@ function Articulos() {
     busqueda,
     setBusqueda,
     modoListaCompleta,
-    activarListaCompleta,
+    ListaCompleta,
     refrescar: buscarEnFirebase,
   } = useInventario(usuario, categoriaSeleccionada);
 
@@ -322,7 +322,7 @@ function Articulos() {
       busqueda={busqueda}
       setBusqueda={setBusqueda}
       modoListaCompleta={modoListaCompleta}
-      activarListaCompleta={activarListaCompleta}
+      ListaCompleta={ListaCompleta}
       buscarEnSupabase={buscarEnFirebase}
 
       scaneando={scaneando}

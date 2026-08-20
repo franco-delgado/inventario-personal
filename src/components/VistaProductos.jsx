@@ -22,7 +22,7 @@ export function VistaProductos({
   handleGuardar,
   setCodigoEscaneado,
   codigoEscaneado,
-  activarListaCompleta,
+  ListaCompleta,
   modoListaCompleta,
 }) {
   const { usuario } = useParams();
@@ -199,14 +199,14 @@ export function VistaProductos({
                 type="button"
                 className="btn-mostrar-lista"
                 onClick={() => {
-                  if (typeof activarListaCompleta === "function") {
-                    activarListaCompleta();
+                  if (typeof ListaCompleta === "function") {
+                    ListaCompleta();
                   } else {
-                    console.error("activarListaCompleta no está definida.");
+                    console.error("ListaCompleta no está definida.");
                   }
                 }}
               >
-                Mostrar lista
+                {modoListaCompleta ? "Ocultar lista" : "Mostrar lista"}
               </button>
             </div>
           </div>
