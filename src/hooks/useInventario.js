@@ -41,8 +41,8 @@ export function useInventario(usuario, categoriaSeleccionada) {
 
       const data = snapshot.val();
       const listaGlobal = Object.keys(data).map((key) => ({
-        id: key,
         ...data[key],
+        id: key,
       }));
 
       // 1. Filtrar primero obligatoriamente por Usuario y Categoría actual

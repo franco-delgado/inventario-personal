@@ -29,10 +29,10 @@ h1 {
 }
 
 .modal-content {
-  background-color: #f884df; /* O el color de tu fondo */
+  background-color: #5cdcf9; /* O el color de tu fondo */
   padding: 30px;
   border-radius: 15px;
-  border: 1px solid #f5145f;
+  border: 1px solid #0c3ab8;
   width: 85%;
   max-width: 500px;
   text-align: left;

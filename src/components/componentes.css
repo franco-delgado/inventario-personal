@@ -14,14 +14,18 @@
 }
 
 .seccion-relacionados {
-  margin-top: 15px;
+  margin-top: 20px;
+  border-top: 1px solid #444;
+  padding-top: 10px;
   text-align: left;
 }
+
 .relacionados-titulo {
   font-size: 0.9rem;
   color: #aaa;
   margin-bottom: 5px;
 }
+
 .relacionados-lista {
   max-height: 100px;
   overflow-y: auto;
@@ -29,6 +33,7 @@
   padding: 5px;
   border-radius: 4px;
 }
+
 .art-ventana {
   font-size: 0.85rem;
   color: #fff;
@@ -36,10 +41,14 @@
   background: rgb(53, 53, 53);
   border: 1px solid #000;
 }
+
 /*DETALLE PRODUCTO*/
+
 .art-relacionado {
   font-size: 0.85rem;
   color: #000;
+  font-weight: bold;
+  margin-bottom: 5px;
 }
 
 .campo-edicion-fila {
@@ -49,6 +58,15 @@
   margin-bottom: 10px;
 }
 
+.label-campo {
+  min-width: 80px;
+}
+
+.input-flex {
+  flex: 1;
+}
+
+.btn-guardar,
 .btn-update-small {
   background: #4caf50;
   border: none;
@@ -58,13 +76,40 @@
   cursor: pointer;
   font-size: 0.8rem;
 }
+
 .art-en-ventana {
   font-size: 0.9rem;
   color: #000;
   margin-bottom: 3px;
 }
 
+.botones-accion {
+  margin-top: 15px;
+}
+
+.btn-eliminar {
+  background-color: #100668;
+  width: 100%;
+  color: white;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.btn-cerrar {
+  margin-top: 20px;
+  width: 100%;
+  background-color: #444;
+  color: white;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
 /*FORMULARIO-NUEVO*/
+
 .formulario-nuevo {
   background: #c7c5c5;
   padding: 20px;
@@ -74,6 +119,7 @@
   gap: 15px;
   flex-wrap: wrap;
 }
+
 .contenInputs {
   display: flex;
   gap: 5px;

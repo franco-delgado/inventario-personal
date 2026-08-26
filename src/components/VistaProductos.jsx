@@ -91,22 +91,22 @@ export function VistaProductos({
 
   return (
     <div className="content-principal">
+      
       {productoSeleccionado &&
-        typeof productoSeleccionado.nombre === "string" && (
-          <DetalleProducto
-            producto={productoSeleccionado}
-            onClose={() => setProductoSeleccionado(null)}
-            todosLosProductos={productosAMostrar}
-            onActualizar={buscarEnSupabase}
-          />
-        )}
-
-      {scaneando && (
-        <Scanner
-          onScanSuccess={handleScanSuccess}
-          onClose={() => setScaneando(false)}
-        />
-      )}
+  typeof productoSeleccionado.nombre === "string" && (
+    <DetalleProducto
+      producto={productoSeleccionado}
+      onClose={() => setProductoSeleccionado(null)}
+      todosLosProductos={productosAMostrar}
+      onActualizar={async () => {
+        // Refresca la lista general y limpia la selección vieja para forzar el re-render
+        if (typeof buscarEnSupabase === "function") {
+          await buscarEnSupabase();
+        }
+        setProductoSeleccionado(null);
+      }}
+    />
+)}
 
       <div className="header-navegacion">
         <button onClick={() => setCategoriaSeleccionada(null)}>
