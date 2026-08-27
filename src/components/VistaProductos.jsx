@@ -91,15 +91,21 @@ export function VistaProductos({
 
   return (
     <div className="content-principal">
+      {scaneando && (
+      <Scanner
+      onScanSuccess={handleScanSuccess}
+      onClose={() => setScaneando(false)}
+      />
+      )}
       
-      {productoSeleccionado &&
-  typeof productoSeleccionado.nombre === "string" && (
+    {productoSeleccionado &&
+    typeof productoSeleccionado.nombre === "string" && (
     <DetalleProducto
       producto={productoSeleccionado}
       onClose={() => setProductoSeleccionado(null)}
       todosLosProductos={productosAMostrar}
       onActualizar={async () => {
-        // Refresca la lista general y limpia la selección vieja para forzar el re-render
+          // Refresca la lista general y limpia la selección vieja para forzar el re-render
         if (typeof buscarEnSupabase === "function") {
           await buscarEnSupabase();
         }
