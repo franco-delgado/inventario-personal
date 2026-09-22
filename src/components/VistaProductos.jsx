@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { DetalleProducto } from "./DetalleProducto";
 import { Scanner } from "./Scanner";
+import { ReconocedorProducto } from "./ReconocedorProducto";
 import { useParams } from "react-router-dom";
 import { FormularioNuevo } from "./FormularioNuevo";
 import "./VistaProductos.css";
@@ -26,6 +28,7 @@ export function VistaProductos({
   modoListaCompleta,
 }) {
   const { usuario } = useParams();
+  const [mostrandoReconocedor, setMostrandoReconocedor] = useState(false);
 
   const hayTextoEnBuscador = Boolean(
     (busqueda.nombre && busqueda.nombre.trim() !== "") ||
@@ -97,6 +100,16 @@ export function VistaProductos({
       onClose={() => setScaneando(false)}
       />
       )}
+
+      {mostrandoReconocedor && (
+        <ReconocedorProducto
+          onClose={() => setMostrandoReconocedor(false)}
+          onVerFicha={(producto) => {
+            setMostrandoReconocedor(false);
+            setProductoSeleccionado(producto);
+          }}
+        />
+      )}
       
     {productoSeleccionado &&
     typeof productoSeleccionado.nombre === "string" && (
@@ -127,6 +140,14 @@ export function VistaProductos({
         <div className="pantalla-productos">
           {/* Panel de Búsqueda */}
           <div className="contenedor-busqueda">
+            <button
+              type="button"
+              className="btn-reconocer-envase"
+              onClick={() => setMostrandoReconocedor(true)}
+            >
+              📦🔎 Reconocer producto por cámara (frente del envase)
+            </button>
+
             <input
               className="buscador buscador-principal"
               placeholder="NOMBRE..."

@@ -294,7 +294,7 @@ function Articulos() {
               <ul>
                 {productosVencimiento.map((p) => (
                   <li key={p.id}>
-                    {p.nombre} - <strong>Vence: {p.fechaVto}</strong>
+                    {p.nombre} - <strong>Vence: {p.fechaVto} --- Registro: {p.registro} </strong>
                   </li>
                 ))}
                 {productosVencimiento.length === 0 && (
