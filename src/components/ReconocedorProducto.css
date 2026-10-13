@@ -17,7 +17,6 @@
   overflow: hidden;
   border-radius: 10px;
   background-color: #000;
-  aspect-ratio: 4 / 3;
 }
 
 .reconocedor-video {
@@ -31,8 +30,6 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 80%;
-  height: 50%;
   border: 2px solid #00ff00;
   border-radius: 6px;
   box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.5);
@@ -81,4 +78,27 @@
 
 .reconocedor-botones button {
   flex: 1;
+}
+
+.reconocedor-visual {
+  color: #9fd4ff;
+  text-align: center;
+  font-size: 0.8rem;
+  margin-top: 6px;
+  word-break: break-word;
+}
+
+.reconocedor-tip {
+  color: #888;
+  text-align: center;
+  font-size: 0.75rem;
+  margin-top: 6px;
+}
+
+.reconocedor-foto-resultado {
+  display: block;
+  max-width: 100%;
+  max-height: 120px;
+  margin: 8px auto 4px;
+  border-radius: 6px;
 }

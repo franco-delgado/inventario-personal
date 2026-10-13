@@ -5,6 +5,7 @@ import { ref, get, push, set, remove } from "firebase/database";
 import { VistaProductos } from "../components/VistaProductos.jsx";
 import { exportarVencimientosAExcel } from "../utils/exportarExcel.js";
 import { useInventario } from "../hooks/useInventario.js"; // 👈 Importación del Hook
+import { guardarFotoProducto } from "../lib/fotos.js";
 import "./Articulos.css";
 
 function Articulos() {
@@ -132,7 +133,7 @@ function Articulos() {
     setScaneando(false);
   };
 
-  const handleGuardar = async (productoData) => {
+  const handleGuardar = async (productoData, foto) => {
     if (!usuario) return;
     try {
       const prodRef = ref(db, "productos-farmacia");
@@ -146,7 +147,21 @@ function Articulos() {
         usuario: usuario.toUpperCase(),
       });
 
-      alert("Producto Guardado");
+      // La foto (si hay) se guarda en nodos aparte, con el id del producto recién creado.
+      // Si falla, el producto igual queda guardado.
+      let avisoFoto = "";
+      if (foto) {
+        try {
+          await guardarFotoProducto(usuario, nuevoProdRef.key, foto);
+        } catch (errFoto) {
+          avisoFoto =
+            "\n\nPero la foto no se pudo guardar (" +
+            errFoto.message +
+            "). Podés agregarla desde la ficha del producto.";
+        }
+      }
+
+      alert("Producto Guardado" + avisoFoto);
       setMostrandoFormularioNuevo(false);
       setBusqueda({ nombre: "", cb: "", registro: "", fecha: "" });
       buscarEnFirebase();
@@ -174,8 +189,8 @@ function Articulos() {
 
       const data = snapshot.val();
       const lista = Object.keys(data).map((key) => ({
-        id: key,
         ...data[key],
+        id: key,
       }));
 
       const vtos = lista
@@ -209,8 +224,8 @@ function Articulos() {
 
       const data = snapshot.val();
       const listaCompleta = Object.keys(data).map((key) => ({
-        id: key,
         ...data[key],
+        id: key,
       }));
 
       const productosUsuario = listaCompleta.filter(

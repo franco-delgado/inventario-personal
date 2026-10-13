@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { CapturaFoto } from "./CapturaFoto.jsx";
 
 export function FormularioNuevo({
   onGuardar,
@@ -14,6 +15,10 @@ export function FormularioNuevo({
     stock: "",
     fechaVto: "",
   });
+
+  // La foto va en un estado APARTE: nunca se mezcla con los datos del producto
+  const [fotoPendiente, setFotoPendiente] = useState(null); // { foto, firma }
+  const [capturandoFoto, setCapturandoFoto] = useState(false);
 
   // Este efecto detecta cuando llega un código desde el Scanner en el padre
   useEffect(() => {
@@ -34,10 +39,14 @@ export function FormularioNuevo({
       return;
     }
     // Envía el producto formateado hacia el handler de guardar en Firebase (Padre)
-    onGuardar({
-      ...producto,
-      stock: parseInt(producto.stock) || 0,
-    });
+    // La foto viaja como segundo argumento, separada del producto
+    onGuardar(
+      {
+        ...producto,
+        stock: parseInt(producto.stock) || 0,
+      },
+      fotoPendiente
+    );
   };
 
   return (
@@ -98,6 +107,27 @@ export function FormularioNuevo({
           />
         </div>
 
+        <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+          <label style={{ fontSize: "12px", color: "#666" }}>
+            Foto del envase (opcional):
+          </label>
+          {fotoPendiente && (
+            <img
+              src={fotoPendiente.foto}
+              alt="Foto del envase"
+              style={{ maxWidth: "100%", maxHeight: "120px", borderRadius: "6px" }}
+            />
+          )}
+          <button type="button" onClick={() => setCapturandoFoto(true)}>
+            {fotoPendiente ? "📷 Cambiar foto" : "📷 Agregar foto"}
+          </button>
+          {fotoPendiente && (
+            <button type="button" onClick={() => setFotoPendiente(null)}>
+              Quitar foto
+            </button>
+          )}
+        </div>
+
         <div className="botones-acciones" style={{ marginTop: "15px" }}>
           <button type="submit" className="btn-guardar">
             GUARDAR
@@ -107,6 +137,16 @@ export function FormularioNuevo({
           </button>
         </div>
       </form>
+
+      {capturandoFoto && (
+        <CapturaFoto
+          onConfirmar={(captura) => {
+            setFotoPendiente(captura);
+            setCapturandoFoto(false);
+          }}
+          onCancelar={() => setCapturandoFoto(false)}
+        />
+      )}
     </div>
   );
 }

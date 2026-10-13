@@ -2,6 +2,12 @@ import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { ref, update, remove } from "firebase/database";
 import { db } from "../lib/firebase.js";
+import {
+  obtenerFotoProducto,
+  guardarFotoProducto,
+  eliminarFotoProducto,
+} from "../lib/fotos.js";
+import { CapturaFoto } from "./CapturaFoto.jsx";
 import "./componentes.css";
 
 export function DetalleProducto({
@@ -27,6 +33,27 @@ export function DetalleProducto({
       });
     }
   }, [producto]);
+
+  // Foto del envase: undefined = cargando, null = sin foto, texto = foto.
+  // Se guarda aparte (fotos-farmacia): nunca forma parte del producto ni del Excel.
+  const [fotoUrl, setFotoUrl] = useState(undefined);
+  const [capturandoFoto, setCapturandoFoto] = useState(false);
+
+  useEffect(() => {
+    if (!producto?.id || !usuario) return;
+    let vivo = true;
+    obtenerFotoProducto(usuario, producto.id)
+      .then((url) => {
+        if (vivo) setFotoUrl(url);
+      })
+      .catch((err) => {
+        console.error("Error cargando la foto:", err);
+        if (vivo) setFotoUrl(null);
+      });
+    return () => {
+      vivo = false;
+    };
+  }, [producto?.id, usuario]);
 
   if (!producto) return null;
 
@@ -73,6 +100,27 @@ export function DetalleProducto({
     }
   };
 
+  // GUARDAR / QUITAR LA FOTO DEL ENVASE
+  const guardarFoto = async ({ foto, firma }) => {
+    try {
+      await guardarFotoProducto(usuario, producto.id, { foto, firma });
+      setFotoUrl(foto);
+      setCapturandoFoto(false);
+    } catch (err) {
+      alert("No se pudo guardar la foto: " + err.message);
+    }
+  };
+
+  const quitarFoto = async () => {
+    if (!window.confirm("¿Quitar la foto de este producto?")) return;
+    try {
+      await eliminarFotoProducto(usuario, producto.id);
+      setFotoUrl(null);
+    } catch (err) {
+      alert("No se pudo quitar la foto: " + err.message);
+    }
+  };
+
   // FUNCIÓN PARA ELIMINAR EN FIREBASE
   const handleEliminar = async () => {
     if (window.confirm(`¿Eliminar ${producto.nombre}?`)) {
@@ -84,6 +132,13 @@ export function DetalleProducto({
 
         const prodRef = ref(db, `productos-farmacia/${producto.id}`);
         await remove(prodRef);
+
+        // La foto asociada también se borra (para que no quede huérfana)
+        try {
+          await eliminarFotoProducto(usuario, producto.id);
+        } catch (errFoto) {
+          console.error("No se pudo borrar la foto asociada:", errFoto);
+        }
 
         onClose();
         if (onActualizar) onActualizar();
@@ -168,6 +223,38 @@ export function DetalleProducto({
           </div>
         </div>
 
+        {/* FOTO DEL ENVASE: se guarda aparte, no afecta a la lista ni al Excel */}
+        <div className="seccion-foto">
+          <p className="foto-titulo">Foto del envase</p>
+          {fotoUrl === undefined && <p className="foto-estado">Cargando foto...</p>}
+          {fotoUrl === null && (
+            <p className="foto-estado">
+              Sin foto. Agregá una para reconocerlo por cámara.
+            </p>
+          )}
+          {fotoUrl && (
+            <img
+              src={fotoUrl}
+              alt={`Foto de ${producto.nombre}`}
+              className="foto-producto"
+            />
+          )}
+          <div className="foto-botones">
+            <button
+              type="button"
+              className="btn-guardar"
+              onClick={() => setCapturandoFoto(true)}
+            >
+              {fotoUrl ? "📷 Cambiar foto" : "📷 Agregar foto"}
+            </button>
+            {fotoUrl && (
+              <button type="button" className="btn-quitar-foto" onClick={quitarFoto}>
+                Quitar foto
+              </button>
+            )}
+          </div>
+        </div>
+
         <div className="botones-accion" style={{ marginTop: "15px" }}>
           <button
             className="btn-eliminar"
@@ -199,6 +286,13 @@ export function DetalleProducto({
           CERRAR VENTANA
         </button>
       </div>
+
+      {capturandoFoto && (
+        <CapturaFoto
+          onConfirmar={guardarFoto}
+          onCancelar={() => setCapturandoFoto(false)}
+        />
+      )}
     </div>
   );
 }
