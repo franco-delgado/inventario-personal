@@ -1,66 +1,131 @@
-/* Barra de navegación principal con Grid para centrado perfecto */
+/* Barra superior fija */
 .cierre-navbar {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr; /* 3 columnas igualadas */
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--nav-bg);
+  border-bottom: 1px solid var(--nav-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.navbar-inner {
+  display: flex;
   align-items: center;
-  padding: 12px 20px;
-  background-color: #678ae9;
-  color: #ffffff;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  gap: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 10px 20px;
 }
 
-/* Espaciador fantasma para equilibrar el espacio a la izquierda */
-.navbar-spacer {
-  visibility: hidden;
-}
-
-/* Título de la farmacia perfectamente centrado */
 .navbar-brand {
-  font-size: 24px;
-  font-weight: bold;
-  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text);
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+  text-decoration: none;
   white-space: nowrap;
 }
 
-/* Botón alineado totalmente a la derecha */
+.navbar-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.navbar-logo svg {
+  width: 20px;
+  height: 20px;
+}
+
+.navbar-links {
+  display: flex;
+  gap: 4px;
+  margin-right: auto;
+}
+
+.navbar-link {
+  padding: 7px 12px;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.92rem;
+  text-decoration: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.navbar-link:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.navbar-link.active {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.navbar-acciones {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.navbar-usuario {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 4px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.navbar-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.navbar-usuario-nombre {
+  text-transform: capitalize;
+}
+
 .navbar-logout-btn {
-  justify-self: end;
-  background-color: #c4c3c3;
-  color: #000000;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: background-color 0.2s ease, transform 0.1s ease;
+  background: transparent;
 }
 
-.navbar-logout-btn:hover {
-  background-color: #b0afaf;
-}
-
-.navbar-logout-btn:active {
-  transform: scale(0.98);
-}
-
-/* Ajustes Adaptables (Móviles) */
-@media (max-width: 600px) {
-  .cierre-navbar {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 15px;
+@media (max-width: 720px) {
+  .navbar-inner {
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    padding: 10px 14px;
   }
 
-  .navbar-spacer {
-    display: none;
+  .navbar-links {
+    order: 3;
+    width: 100%;
+    margin-right: 0;
   }
 
   .navbar-brand {
-    font-size: 20px;
+    margin-right: auto;
   }
 
-  .navbar-logout-btn {
-    width: 100%;
+  .navbar-usuario-nombre {
+    display: none;
   }
 }

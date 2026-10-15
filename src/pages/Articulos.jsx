@@ -6,6 +6,7 @@ import { VistaProductos } from "../components/VistaProductos.jsx";
 import { exportarVencimientosAExcel } from "../utils/exportarExcel.js";
 import { useInventario } from "../hooks/useInventario.js"; // 👈 Importación del Hook
 import { guardarFotoProducto } from "../lib/fotos.js";
+import { estadoVencimiento, formatearFecha } from "../utils/vencimiento.js";
 import "./Articulos.css";
 
 function Articulos() {
@@ -243,83 +244,110 @@ function Articulos() {
   // --- VISTA DE SELECCIÓN DE CATEGORÍA ---
   if (!categoriaSeleccionada) {
     return (
-      <div className="content-principal">
-        <h1>Articulos</h1>
+      <main className="page">
+        <div className="page-header">
+          <h1>Artículos</h1>
+          <p>Elegí una categoría para ver y cargar productos.</p>
+        </div>
+
         {cargandoCategorias ? (
-          <p>Cargando categorías...</p>
+          <p className="estado-carga">Cargando categorías...</p>
         ) : (
-          <div className="content-categorias">
+          <div className="categorias-grid">
             {categorias.map((cat) => (
               <div key={cat.id} className="contenedor-btn-categoria">
                 <button
+                  type="button"
                   className="btn-categoria"
                   onClick={() => setCategoriaSeleccionada(cat.categoria)}
                 >
                   {cat.categoria}
                 </button>
                 <button
+                  type="button"
                   className="btn-eliminar-cat"
                   onClick={(e) => eliminarCategoria(cat.id, cat.categoria, e)}
+                  aria-label={`Eliminar la categoría ${cat.categoria}`}
+                  title="Eliminar categoría"
                 >
                   ✕
                 </button>
               </div>
             ))}
-            <button className="btn-agregar-cat" onClick={agregarCategoria}>
-              Nueva Categoría
+            <button type="button" className="btn-agregar-cat" onClick={agregarCategoria}>
+              + Nueva categoría
             </button>
           </div>
         )}
 
         <div className="busquedaVTO">
           <button
+            type="button"
             className="botonVTOgeneral"
             onClick={() => setMostrandoVencimientos(!mostrandoVencimientos)}
           >
-            {mostrandoVencimientos ? "Volver al Inventario" : "Próximos a vencer"}
+            {mostrandoVencimientos ? "Ocultar vencimientos" : "Próximos a vencer"}
           </button>
           {mostrandoVencimientos && (
-            <div className="panel-vencimientos">
-              <h3>Filtrar por Vencimiento</h3>
-              <input
-                type="number"
-                value={filtroFecha.anio}
-                onChange={(e) =>
-                  setFiltroFecha({ ...filtroFecha, anio: e.target.value })
-                }
-              />
-              <select
-                value={filtroFecha.mes}
-                onChange={(e) =>
-                  setFiltroFecha({ ...filtroFecha, mes: e.target.value })
-                }
-              >
-                {[
-                  "01", "02", "03", "04", "05", "06",
-                  "07", "08", "09", "10", "11", "12",
-                ].map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-              </select>
-              <button onClick={buscarVencimientos}>Buscar</button>
-              <button onClick={generarExcelDirecto}>Crear Excel</button>
+            <section className="card panel-vencimientos">
+              <h3>Vencimientos por mes</h3>
+              <div className="vto-filtros">
+                <input
+                  type="number"
+                  aria-label="Año"
+                  value={filtroFecha.anio}
+                  onChange={(e) =>
+                    setFiltroFecha({ ...filtroFecha, anio: e.target.value })
+                  }
+                />
+                <select
+                  aria-label="Mes"
+                  value={filtroFecha.mes}
+                  onChange={(e) =>
+                    setFiltroFecha({ ...filtroFecha, mes: e.target.value })
+                  }
+                >
+                  {[
+                    "01", "02", "03", "04", "05", "06",
+                    "07", "08", "09", "10", "11", "12",
+                  ].map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+                <button type="button" className="btn-primary" onClick={buscarVencimientos}>
+                  Buscar
+                </button>
+                <button type="button" onClick={generarExcelDirecto}>
+                  Descargar Excel
+                </button>
+              </div>
 
-              <ul>
-                {productosVencimiento.map((p) => (
-                  <li key={p.id}>
-                    {p.nombre} - <strong>Vence: {p.fechaVto} --- Registro: {p.registro} </strong>
-                  </li>
-                ))}
-                {productosVencimiento.length === 0 && (
-                  <p>No hay productos que venzan en esta fecha.</p>
-                )}
-              </ul>
-            </div>
+              {productosVencimiento.length > 0 ? (
+                <ul className="lista-vencimientos">
+                  {productosVencimiento.map((p) => {
+                    const estado = estadoVencimiento(p.fechaVto);
+                    return (
+                      <li key={p.id}>
+                        <span className="vto-nombre">{p.nombre}</span>
+                        <span className="vto-detalle">
+                          Vence {formatearFecha(p.fechaVto)} · Registro {p.registro || "-"}
+                        </span>
+                        {estado && <span className={`badge ${estado.clase}`}>{estado.texto}</span>}
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <p className="mensaje-vacio-vto">
+                  No hay productos que venzan en esta fecha.
+                </p>
+              )}
+            </section>
           )}
         </div>
-      </div>
+      </main>
     );
   }
 

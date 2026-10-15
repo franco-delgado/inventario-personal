@@ -1,8 +1,9 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { db } from "../lib/firebase"; // Importamos el cliente de Firebase
-import { ref, get } from "firebase/database";
-import "./Login.css"; // Importamos los estilos estéticos
+import { useState } from "react";
+import { Navigate, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext.jsx";
+import { validarCredenciales } from "../lib/auth.js";
+import { ThemeToggle } from "../components/ThemeToggle.jsx";
+import "./Login.css";
 
 const Login = () => {
   const [user, setUser] = useState("");
@@ -10,66 +11,34 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const navigate = useNavigate();
+  const { sesion, iniciarSesion } = useAuth();
+
+  // Si ya hay sesión, no tiene sentido mostrar el login
+  if (sesion) {
+    return <Navigate to={`/articulos/${sesion.usuario}`} replace />;
+  }
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setErrorMsg("");
 
     if (user.trim() === "" || pass.trim() === "") {
-      setErrorMsg("Por favor, completa todos los campos.");
+      setErrorMsg("Completá usuario y contraseña.");
       return;
     }
 
     setLoading(true);
-
     try {
-      // Obtenemos la referencia al nodo "usuarios-farmacia"
-      const usuariosRef = ref(db, "usuarios-farmacia");
-      const snapshot = await get(usuariosRef);
-
-      if (!snapshot.exists()) {
+      const resultado = await validarCredenciales(user, pass);
+      if (!resultado) {
         setErrorMsg("Usuario o contraseña incorrectos.");
-        setLoading(false);
         return;
       }
-
-      const data = snapshot.val();
-      
-      // Firebase guarda datos como un Array o un Objeto según la estructura del JSON.
-      // Convertimos los usuarios a una lista para buscar la coincidencia.
-      const listaUsuarios = Array.isArray(data)
-        ? data
-        : Object.values(data);
-
-      const usuarioIngresado = user.trim().toUpperCase();
-      const passwordIngresada = pass.trim();
-
-      // Buscamos coincidencia de usuario y contraseña
-      const usuarioEncontrado = listaUsuarios.find(
-        (u) =>
-          u &&
-          u.usuario &&
-          u.usuario.toString().toUpperCase() === usuarioIngresado &&
-          u.contraseña &&
-          u.contraseña.toString() === passwordIngresada
-      );
-
-      if (!usuarioEncontrado) {
-        setErrorMsg("Usuario o contraseña incorrectos.");
-      } else {
-        // 1. CREAMOS LA SESIÓN MANUALMENTE (Guardamos una marca en el localStorage)
-        localStorage.setItem("token", "sesion_activa_farmacia");
-
-        const nombreUsuario = usuarioEncontrado.usuario.toString().toLowerCase();
-        // Guardamos también el nombre por si lo necesitas en otros componentes
-        localStorage.setItem("usuario", nombreUsuario);
-
-        // 2. Login exitoso: Redirige a articulos pasando el usuario en la URL
-        navigate(`/articulos/${nombreUsuario}`);
-      }
+      iniciarSesion(resultado.usuario);
+      navigate(`/articulos/${resultado.usuario}`, { replace: true });
     } catch (err) {
-      console.error("Error inesperado:", err);
-      setErrorMsg("Hubo un problema al procesar la solicitud.");
+      console.error("Error al iniciar sesión:", err);
+      setErrorMsg("No se pudo verificar. Revisá tu conexión e intentá de nuevo.");
     } finally {
       setLoading(false);
     }
@@ -77,25 +46,37 @@ const Login = () => {
 
   return (
     <div className="login-container">
+      <ThemeToggle className="login-tema" />
+
       <div className="login-card">
         <div className="login-header">
-          <h2>Sistema Farmacia</h2>
-          <p>Introduce tus credenciales para ingresar</p>
+          <span className="login-logo" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+          </span>
+          <h1>Inventario de farmacia</h1>
+          <p>Ingresá con tu usuario para continuar.</p>
         </div>
 
-        <form onSubmit={handleLogin} className="login-form">
-          {errorMsg && <div className="error-banner">{errorMsg}</div>}
+        <form onSubmit={handleLogin} className="login-form" noValidate>
+          {errorMsg && (
+            <div className="aviso aviso-error" role="alert">
+              {errorMsg}
+            </div>
+          )}
 
           <div className="input-group">
             <label htmlFor="usuario">Usuario</label>
             <input
               id="usuario"
               type="text"
-              placeholder="Ej: FRANCO"
               value={user}
               onChange={(e) => setUser(e.target.value)}
               disabled={loading}
               autoComplete="username"
+              autoCapitalize="none"
+              autoFocus
             />
           </div>
 
@@ -104,7 +85,6 @@ const Login = () => {
             <input
               id="password"
               type="password"
-              placeholder="••••••••"
               value={pass}
               onChange={(e) => setPass(e.target.value)}
               disabled={loading}
@@ -113,7 +93,7 @@ const Login = () => {
           </div>
 
           <button type="submit" className="login-btn" disabled={loading}>
-            {loading ? "Verificando..." : "Iniciar Sesión"}
+            {loading ? "Verificando..." : "Iniciar sesión"}
           </button>
         </form>
       </div>

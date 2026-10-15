@@ -1,31 +1,36 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import ProtectedRoute from "./components/ProtectedRoute";
-import Articulos from "./pages/Articulos"; // Usamos solo esta importación limpia
+import AdminRoute from "./components/AdminRoute";
+import Articulos from "./pages/Articulos";
+import Usuarios from "./pages/Usuarios";
+import { useAuth } from "./context/AuthContext.jsx";
+
+/** "/dashboard" lleva al inventario del usuario con sesión */
+function IrAMiInventario() {
+  const { sesion } = useAuth();
+  return <Navigate to={sesion ? `/articulos/${sesion.usuario}` : "/"} replace />;
+}
 
 function App() {
   return (
     <Routes>
-      {/* 1. RUTA PÚBLICA: Pantalla de Login */}
+      {/* Pública: inicio de sesión */}
       <Route path="/" element={<Login />} />
-      <Route path="login" element={<Login />}/>
+      <Route path="login" element={<Login />} />
 
-      {/* 2. RUTAS PROTEGIDAS: Todo lo que vaya acá adentro tendrá la barra de "Cierre" */}
+      {/* Privadas: muestran la barra superior */}
       <Route element={<ProtectedRoute />}>
-        
-        {/* Tu Dashboard Principal (Lista de artículos con el usuario en la URL) */}
         <Route path="/articulos/:usuario" element={<Articulos />} />
-        
-        {/* 💡 OPCIONAL: Si un usuario logueado intenta entrar a "/" sin el nombre, 
-            podés hacer que también renderice Articulos o manejarlo desde el Login */}
-        <Route path="/dashboard" element={<Articulos />} />
-        
-        {/* Aquí vas a poder sumar más secciones del inventario en el futuro, por ejemplo:
-        <Route path="/vencimientos" element={<Vencimientos />} />
-        <Route path="/proveedores" element={<Proveedores />} /> 
-        */}
-        
+        <Route path="/dashboard" element={<IrAMiInventario />} />
+
+        {/* Solo el administrador (franco) */}
+        <Route element={<AdminRoute />}>
+          <Route path="/admin/usuarios" element={<Usuarios />} />
+        </Route>
       </Route>
+
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

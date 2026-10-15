@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { CapturaFoto } from "./CapturaFoto.jsx";
+import "./componentes.css";
 
 export function FormularioNuevo({
   onGuardar,
@@ -51,55 +52,74 @@ export function FormularioNuevo({
 
   return (
     <div className="formulario-nuevo">
-      <h3>Registrar Producto</h3>
+      <h3>Registrar producto</h3>
       <form onSubmit={handleSubmit} className="inputs-registro">
-        {/* Código de Barras con botón de Scanner */}
-        <div className="contenInputs">
-          <input
-            name="cb"
-            placeholder="Código de Barras"
-            value={producto.cb}
-            onChange={handleChange}
-          />
-          <button type="button" onClick={() => onAbrirScanner("nuevo")}>
-            📸
-          </button>
+        <div className="form-campo">
+          <label htmlFor="nuevo-cb">Código de barras</label>
+          <div className="contenInputs">
+            <input
+              id="nuevo-cb"
+              name="cb"
+              placeholder="Escribilo o escanealo"
+              value={producto.cb}
+              onChange={handleChange}
+            />
+            <button
+              type="button"
+              className="btn-escaneo"
+              onClick={() => onAbrirScanner("nuevo")}
+            >
+              Escanear
+            </button>
+          </div>
         </div>
 
-        <input
-          name="nombre"
-          placeholder="Nombre del Producto"
-          value={producto.nombre}
-          onChange={handleChange}
-        />
-
-        <input
-          name="registro"
-          placeholder="Nro. de Registro / Serie"
-          value={producto.registro}
-          onChange={handleChange}
-        />
-
-        <input
-          name="contenido"
-          placeholder="Contenido (ej: 500ml)"
-          value={producto.contenido}
-          onChange={handleChange}
-        />
-
-        <input
-          name="stock"
-          type="number"
-          placeholder="Stock Inicial"
-          value={producto.stock}
-          onChange={handleChange}
-        />
-
-        <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-          <label style={{ fontSize: "12px", color: "#666" }}>
-            Vencimiento:
-          </label>
+        <div className="form-campo">
+          <label htmlFor="nuevo-nombre">Nombre del producto</label>
           <input
+            id="nuevo-nombre"
+            name="nombre"
+            value={producto.nombre}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="form-campo">
+          <label htmlFor="nuevo-registro">Número de registro o serie</label>
+          <input
+            id="nuevo-registro"
+            name="registro"
+            value={producto.registro}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="form-campo">
+          <label htmlFor="nuevo-contenido">Contenido</label>
+          <input
+            id="nuevo-contenido"
+            name="contenido"
+            placeholder="Ej: 500 ml"
+            value={producto.contenido}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="form-campo">
+          <label htmlFor="nuevo-stock">Stock inicial</label>
+          <input
+            id="nuevo-stock"
+            name="stock"
+            type="number"
+            value={producto.stock}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="form-campo">
+          <label htmlFor="nuevo-vto">Vencimiento</label>
+          <input
+            id="nuevo-vto"
             name="fechaVto"
             type="date"
             value={producto.fechaVto}
@@ -107,33 +127,37 @@ export function FormularioNuevo({
           />
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-          <label style={{ fontSize: "12px", color: "#666" }}>
-            Foto del envase (opcional):
-          </label>
+        <div className="form-campo">
+          <label>Foto del envase (opcional)</label>
           {fotoPendiente && (
             <img
               src={fotoPendiente.foto}
               alt="Foto del envase"
-              style={{ maxWidth: "100%", maxHeight: "120px", borderRadius: "6px" }}
+              className="formulario-foto-previa"
             />
           )}
-          <button type="button" onClick={() => setCapturandoFoto(true)}>
-            {fotoPendiente ? "📷 Cambiar foto" : "📷 Agregar foto"}
-          </button>
-          {fotoPendiente && (
-            <button type="button" onClick={() => setFotoPendiente(null)}>
-              Quitar foto
+          <div className="foto-botones">
+            <button type="button" onClick={() => setCapturandoFoto(true)}>
+              {fotoPendiente ? "Cambiar foto" : "Agregar foto"}
             </button>
-          )}
+            {fotoPendiente && (
+              <button
+                type="button"
+                className="btn-quitar-foto"
+                onClick={() => setFotoPendiente(null)}
+              >
+                Quitar foto
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="botones-acciones" style={{ marginTop: "15px" }}>
-          <button type="submit" className="btn-guardar">
-            GUARDAR
-          </button>
+        <div className="botones-acciones">
           <button type="button" className="btn-cancelar" onClick={onCancelar}>
-            CANCELAR
+            Cancelar
+          </button>
+          <button type="submit" className="btn-guardar">
+            Guardar producto
           </button>
         </div>
       </form>

@@ -1,64 +1,142 @@
-.content-principal {
-  background: #678ae9;
+/* ---------- Categorías ---------- */
+
+.categorias-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
 }
-h1 {
-  margin-top: 0px;
-  text-align: center;
+
+.contenedor-btn-categoria {
+  position: relative;
 }
-.content-categorias {
-  background: #678ae9;
+
+.btn-categoria {
+  width: 100%;
+  min-height: 84px;
+  padding: 16px 44px 16px 18px;
+  text-align: left;
+  font-size: 1.02rem;
+  font-weight: 650;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-categoria:hover:not(:disabled) {
+  background: var(--surface);
+  border-color: var(--primary);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-eliminar-cat {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-faint);
+  font-size: 0.9rem;
+  border-radius: 50%;
+}
+
+.btn-eliminar-cat:hover:not(:disabled) {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.btn-agregar-cat {
+  min-height: 84px;
+  background: transparent;
+  border: 1.5px dashed var(--border-strong);
+  border-radius: var(--radius);
+  color: var(--primary);
+}
+
+.btn-agregar-cat:hover:not(:disabled) {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+}
+
+.estado-carga {
+  color: var(--text-muted);
+}
+
+/* ---------- Vencimientos ---------- */
+
+.busquedaVTO {
+  margin-top: 32px;
+}
+
+.botonVTOgeneral {
+  background: var(--surface);
+}
+
+.panel-vencimientos {
+  margin-top: 14px;
   padding: 20px;
+}
+
+.panel-vencimientos h3 {
+  margin-bottom: 14px;
+}
+
+.vto-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.vto-filtros input {
+  width: 110px;
+}
+
+.lista-vencimientos {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 15px;
-  flex-wrap: wrap;
+  gap: 8px;
 }
 
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.8); /* Fondo oscuro */
+.lista-vencimientos li {
   display: flex;
-  justify-content: center;
+  flex-wrap: wrap;
   align-items: center;
-  z-index: 999;
+  gap: 6px 14px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
 }
 
-.modal-content {
-  background-color: #5cdcf9; /* O el color de tu fondo */
-  padding: 30px;
-  border-radius: 15px;
-  border: 1px solid #0c3ab8;
-  width: 85%;
-  max-width: 500px;
-  text-align: left;
+.vto-nombre {
+  flex: 1 1 200px;
+  font-weight: 600;
 }
-.btn-categoria{
-  background-color: #c4c3c3;
+
+.vto-detalle {
+  color: var(--text-muted);
+  font-size: 0.88rem;
 }
-.btn-eliminar-cat{
-  background-color: #c4c3c3;
+
+.mensaje-vacio-vto {
+  margin: 14px 0 0;
+  color: var(--text-muted);
 }
-.btn-cerrar {
-  margin-top: 20px;
-  width: 100%;
-  background-color: #c4c3c3;
-  border: solid 2px #000;
-}
-.btn-agregar-cat{
-  background-color: #c4c3c3;
-}
-.botonVTOgeneral{
-  color: #000;
-   margin: 10px;
-  background-color: #c4c3c3;
-}
-.panel-vencimientos{
-  padding: 20px;
-  border: 1px solid #ccc;
-  margin-Top: 10px;
+
+@media (max-width: 600px) {
+  .categorias-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .btn-categoria,
+  .btn-agregar-cat {
+    min-height: 64px;
+  }
 }

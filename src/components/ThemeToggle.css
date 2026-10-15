@@ -1,0 +1,7 @@
+.theme-toggle {
+  color: var(--text-muted);
+}
+
+.theme-toggle:hover:not(:disabled) {
+  color: var(--primary);
+}

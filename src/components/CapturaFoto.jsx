@@ -128,7 +128,7 @@ export function CapturaFoto({ onConfirmar, onCancelar }) {
     <div className="modal-overlay" style={{ zIndex: 1100 }}>
       <div className="captura-contenido">
         <h3 className="captura-titulo">
-          {fase === "revision" ? "¿Usar esta foto?" : "📷 FOTO DEL ENVASE"}
+          {fase === "revision" ? "¿Usar esta foto?" : "Foto del envase"}
         </h3>
 
         {fase === "camara" && (
@@ -196,19 +196,19 @@ export function CapturaFoto({ onConfirmar, onCancelar }) {
 
         <div className="captura-botones">
           {fase === "camara" && (
-            <button type="button" className="btn-guardar" onClick={tomarFoto}>
-              📷 TOMAR FOTO
+            <button type="button" className="btn-primary" onClick={tomarFoto}>
+              Tomar foto
             </button>
           )}
           {fase === "revision" && (
             <>
               <button
                 type="button"
-                className="btn-guardar"
+                className="btn-primary"
                 onClick={confirmar}
                 disabled={ocupado}
               >
-                {ocupado ? "GUARDANDO..." : "✅ USAR ESTA FOTO"}
+                {ocupado ? "Guardando..." : "Usar esta foto"}
               </button>
               <button
                 type="button"
@@ -219,7 +219,7 @@ export function CapturaFoto({ onConfirmar, onCancelar }) {
                 }}
                 disabled={ocupado}
               >
-                🔁 REPETIR
+                Repetir
               </button>
             </>
           )}
@@ -230,7 +230,7 @@ export function CapturaFoto({ onConfirmar, onCancelar }) {
               onClick={() => archivoRef.current && archivoRef.current.click()}
               disabled={ocupado}
             >
-              🖼 ELEGIR DE LA GALERÍA
+              Elegir de la galería
             </button>
           )}
         </div>
@@ -249,7 +249,7 @@ export function CapturaFoto({ onConfirmar, onCancelar }) {
           onClick={onCancelar}
           disabled={ocupado}
         >
-          CANCELAR
+          Cancelar
         </button>
       </div>
     </div>

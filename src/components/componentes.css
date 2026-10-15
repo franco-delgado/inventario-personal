@@ -1,54 +1,16 @@
-/*VISTAPRODUCTOS*/
+/* ---------- Ficha del producto ---------- */
 
-.lista-resultados {
-  margin-bottom: 30px;
+.detalle-encabezado {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 15px;
   flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
 }
 
-.btn-resultado {
-  padding: 6px 2px;
-}
-
-.seccion-relacionados {
-  margin-top: 20px;
-  border-top: 1px solid #444;
-  padding-top: 10px;
-  text-align: left;
-}
-
-.relacionados-titulo {
-  font-size: 0.9rem;
-  color: #aaa;
-  margin-bottom: 5px;
-}
-
-.relacionados-lista {
-  max-height: 100px;
-  overflow-y: auto;
-  background: rgba(255, 255, 255, 0.05);
-  padding: 5px;
-  border-radius: 4px;
-}
-
-.art-ventana {
-  font-size: 0.85rem;
-  color: #fff;
-  padding: 3px 0;
-  background: rgb(53, 53, 53);
-  border: 1px solid #000;
-}
-
-/*DETALLE PRODUCTO*/
-
-.art-relacionado {
-  font-size: 0.85rem;
-  color: #000;
-  font-weight: bold;
-  margin-bottom: 5px;
+.detalle-encabezado h2 {
+  margin: 0;
+  word-break: break-word;
 }
 
 .campo-edicion-fila {
@@ -59,100 +21,45 @@
 }
 
 .label-campo {
-  min-width: 80px;
+  min-width: 92px;
 }
 
 .input-flex {
   flex: 1;
+  min-width: 0;
 }
 
-.btn-guardar,
 .btn-update-small {
-  background: #4caf50;
-  border: none;
-  border-radius: 4px;
-  color: white;
-  padding: 5px 10px;
-  cursor: pointer;
-  font-size: 0.8rem;
+  padding: 7px 12px;
+  font-size: 0.82rem;
 }
-
-.art-en-ventana {
-  font-size: 0.9rem;
-  color: #000;
-  margin-bottom: 3px;
-}
-
-.botones-accion {
-  margin-top: 15px;
-}
-
-.btn-eliminar {
-  background-color: #100668;
-  width: 100%;
-  color: white;
-  padding: 10px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-.btn-cerrar {
-  margin-top: 20px;
-  width: 100%;
-  background-color: #444;
-  color: white;
-  padding: 10px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-/*FORMULARIO-NUEVO*/
-
-.formulario-nuevo {
-  background: #c7c5c5;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 15px;
-  flex-wrap: wrap;
-}
-
-.contenInputs {
-  display: flex;
-  gap: 5px;
-}
-
-/*FOTO DEL ENVASE (DetalleProducto)*/
 
 .seccion-foto {
-  margin-top: 15px;
-  padding-top: 10px;
-  border-top: 1px solid #444;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
   text-align: center;
 }
 
 .foto-titulo {
-  font-weight: bold;
   margin: 0 0 8px;
+  font-weight: 650;
   text-align: left;
 }
 
 .foto-estado {
-  font-size: 0.85rem;
-  color: #333;
-  margin: 4px 0 8px;
+  margin: 4px 0 10px;
+  color: var(--text-muted);
+  font-size: 0.88rem;
 }
 
 .foto-producto {
   display: block;
   max-width: 100%;
-  max-height: 160px;
-  margin: 0 auto 8px;
-  border-radius: 8px;
-  border: 1px solid #0c3ab8;
+  max-height: 180px;
+  margin: 0 auto 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
 }
 
 .foto-botones {
@@ -162,11 +69,134 @@
 }
 
 .btn-quitar-foto {
-  background: #c4c3c3;
-  color: #000;
-  border: none;
-  border-radius: 4px;
-  padding: 5px 10px;
-  cursor: pointer;
-  font-size: 0.8rem;
+  background: transparent;
+  color: var(--danger);
+  border-color: var(--border-strong);
+}
+
+.seccion-relacionados {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.art-relacionado {
+  margin: 0 0 8px;
+  font-weight: 650;
+}
+
+.relacionados-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 150px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.art-en-ventana {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+}
+
+.art-en-ventana span {
+  color: var(--text-muted);
+}
+
+.detalle-acciones {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.detalle-acciones .btn-cerrar {
+  margin-top: 0;
+}
+
+/* ---------- Formulario de producto nuevo ---------- */
+
+.formulario-nuevo {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.formulario-nuevo h3 {
+  margin-bottom: 16px;
+  font-size: 1.15rem;
+}
+
+.inputs-registro {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.inputs-registro input {
+  width: 100%;
+}
+
+.form-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.contenInputs {
+  display: flex;
+  gap: 8px;
+}
+
+.contenInputs input {
+  flex: 1;
+  min-width: 0;
+}
+
+.formulario-foto-previa {
+  max-width: 100%;
+  max-height: 140px;
+  align-self: flex-start;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.botones-acciones {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.botones-acciones button {
+  flex: 1;
+  padding: 11px;
+}
+
+@media (max-width: 600px) {
+  .formulario-nuevo {
+    padding: 18px;
+  }
+
+  .campo-edicion-fila {
+    flex-wrap: wrap;
+  }
+
+  .label-campo {
+    min-width: 100%;
+  }
+}
+
+.form-campo .foto-botones {
+  justify-content: flex-start;
 }

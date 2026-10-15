@@ -1,0 +1,427 @@
+/* =========================================================
+   Sistema de diseño — Inventario de farmacia
+   Los colores viven en variables: el tema claro/oscuro solo
+   cambia estas variables (atributo data-theme en <html>).
+   ========================================================= */
+
+/* Paleta: verde azulado (teal) de farmacia sobre neutros fríos.
+   Ámbar y rojo se reservan para los vencimientos. */
+:root,
+:root[data-theme="light"] {
+  --bg: #f2f6f5;
+  --surface: #ffffff;
+  --surface-2: #f6faf9;
+  --surface-hover: #ebf3f1;
+  --border: #dbe5e3;
+  --border-strong: #bccbc8;
+
+  --text: #10201f;
+  --text-muted: #4d6360;
+  --text-faint: #7d8f8c;
+
+  --primary: #0f766e;
+  --primary-hover: #0b5f58;
+  --primary-soft: #dcf1ee;
+  --on-primary: #ffffff;
+
+  --success: #15803d;
+  --success-soft: #e0f4e6;
+  --danger: #c62828;
+  --danger-hover: #a31f1f;
+  --danger-soft: #fdeaea;
+  --warning: #a64b05;
+  --warning-soft: #fdf0d9;
+
+  --nav-bg: #ffffff;
+  --nav-border: #dbe5e3;
+
+  --table-head-bg: #e8f1ef;
+  --table-head-text: #173733;
+  --table-stripe: #f7fbfa;
+
+  --focus-ring: 0 0 0 3px rgba(15, 118, 110, 0.28);
+  --shadow-sm: 0 1px 2px rgba(16, 32, 31, 0.06);
+  --shadow-md: 0 6px 18px rgba(16, 32, 31, 0.08);
+  --shadow-lg: 0 20px 50px rgba(16, 32, 31, 0.2);
+  --overlay: rgba(10, 24, 23, 0.55);
+
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+
+  --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+}
+
+:root[data-theme="dark"] {
+  --bg: #0a1413;
+  --surface: #111e1d;
+  --surface-2: #162726;
+  --surface-hover: #1c3130;
+  --border: #223937;
+  --border-strong: #345250;
+
+  --text: #e5f0ee;
+  --text-muted: #98b0ac;
+  --text-faint: #6c8582;
+
+  --primary: #38c3b0;
+  --primary-hover: #5fd8c7;
+  --primary-soft: #123a36;
+  --on-primary: #04201c;
+
+  --success: #4cc97f;
+  --success-soft: #11301f;
+  --danger: #f2706d;
+  --danger-hover: #ff8d8a;
+  --danger-soft: #3b1a1a;
+  --warning: #e8b04a;
+  --warning-soft: #3a2b0f;
+
+  --nav-bg: #0d1a19;
+  --nav-border: #223937;
+
+  --table-head-bg: #163230;
+  --table-head-text: #cfe6e2;
+  --table-stripe: #0f1c1b;
+
+  --focus-ring: 0 0 0 3px rgba(56, 195, 176, 0.38);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.6);
+  --overlay: rgba(2, 10, 9, 0.72);
+}
+
+/* ---------- Base ---------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0 0 0.5em;
+  line-height: 1.25;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+h1 {
+  font-size: 1.6rem;
+}
+h2 {
+  font-size: 1.25rem;
+}
+h3 {
+  font-size: 1.05rem;
+}
+
+p {
+  margin: 0 0 0.6em;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 12px 0 16px;
+}
+
+a {
+  color: var(--primary);
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* ---------- Botones ---------- */
+
+button {
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.2;
+  padding: 9px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease,
+    transform 0.08s ease, box-shadow 0.15s ease;
+}
+
+button:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Variante principal */
+.btn-primary,
+.btn-guardar,
+.btn-nuevo,
+.btn-mostrar-lista,
+.login-btn {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--on-primary);
+}
+
+.btn-primary:hover:not(:disabled),
+.btn-guardar:hover:not(:disabled),
+.btn-nuevo:hover:not(:disabled),
+.btn-mostrar-lista:hover:not(:disabled),
+.login-btn:hover:not(:disabled) {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+
+/* Variante de peligro */
+.btn-danger,
+.btn-eliminar {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+
+.btn-danger:hover:not(:disabled),
+.btn-eliminar:hover:not(:disabled) {
+  background: var(--danger-hover);
+  border-color: var(--danger-hover);
+}
+
+/* Variante discreta de peligro (borde rojo) */
+.btn-danger-soft {
+  background: var(--danger-soft);
+  border-color: transparent;
+  color: var(--danger);
+}
+
+.btn-danger-soft:hover:not(:disabled) {
+  background: var(--danger);
+  color: #fff;
+}
+
+/* Botón de ícono */
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+}
+
+.btn-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ---------- Formularios ---------- */
+
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  max-width: 100%;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-faint);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: var(--focus-ring);
+}
+
+input[type="date"],
+input[type="month"] {
+  color-scheme: inherit;
+}
+
+label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+/* ---------- Contenedores ---------- */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.page {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 28px 20px 48px;
+}
+
+.page-header {
+  margin-bottom: 22px;
+}
+
+.page-header h1 {
+  margin: 0 0 4px;
+}
+
+.page-header p {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+/* ---------- Modales (fichas de producto, etc.) ---------- */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: var(--overlay);
+  backdrop-filter: blur(3px);
+  overflow-y: auto;
+}
+
+.modal-content {
+  width: 100%;
+  max-width: 520px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  padding: 24px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  text-align: left;
+}
+
+.modal-content h2 {
+  margin-bottom: 0;
+}
+
+.btn-cerrar,
+.btn-cancelar {
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+}
+
+.btn-cerrar {
+  width: 100%;
+  margin-top: 16px;
+}
+
+/* ---------- Mensajes ---------- */
+
+.aviso {
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  border: 1px solid transparent;
+}
+
+.aviso-error {
+  background: var(--danger-soft);
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.aviso-ok {
+  background: var(--success-soft);
+  color: var(--success);
+  border-color: var(--success);
+}
+
+/* ---------- Estados de vencimiento ---------- */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  background: var(--surface-2);
+  color: var(--text-muted);
+}
+
+.badge::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.badge-ok {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.badge-warn {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.badge-danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+/* Accesibilidad: respeta a quien prefiere menos movimiento */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}

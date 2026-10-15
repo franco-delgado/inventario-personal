@@ -4,6 +4,7 @@ import { Scanner } from "./Scanner";
 import { ReconocedorProducto } from "./ReconocedorProducto";
 import { useParams } from "react-router-dom";
 import { FormularioNuevo } from "./FormularioNuevo";
+import { estadoVencimiento, formatearFecha } from "../utils/vencimiento.js";
 import "./VistaProductos.css";
 
 export function VistaProductos({
@@ -128,12 +129,10 @@ export function VistaProductos({
 )}
 
       <div className="header-navegacion">
-        <button onClick={() => setCategoriaSeleccionada(null)}>
+        <button type="button" onClick={() => setCategoriaSeleccionada(null)}>
           ← Categorías
         </button>
         <h1>{categoriaSeleccionada}</h1>
-        {/* Elemento de contrapeso para un centrado perfecto */}
-        <div className="header-spacer"></div>
       </div>
 
       {!mostrandoFormularioNuevo ? (
@@ -145,12 +144,12 @@ export function VistaProductos({
               className="btn-reconocer-envase"
               onClick={() => setMostrandoReconocedor(true)}
             >
-              📦🔎 Reconocer producto por cámara (frente del envase)
+              Reconocer producto con la cámara
             </button>
 
             <input
               className="buscador buscador-principal"
-              placeholder="NOMBRE..."
+              placeholder="Buscar por nombre"
               value={busqueda.nombre || ""}
               onChange={(e) => {
                 setBusqueda({
@@ -166,7 +165,7 @@ export function VistaProductos({
               <div className="input-con-boton">
                 <input
                   className="buscador"
-                  placeholder="CB..."
+                  placeholder="Código"
                   value={busqueda.cb || ""}
                   onChange={(e) => {
                     setBusqueda({
@@ -180,18 +179,19 @@ export function VistaProductos({
                 <button
                   type="button"
                   className="btn-escaneo"
+                  aria-label="Escanear código de barras"
                   onClick={() => {
                     setScaneando(true);
                     setInputDestino("busqueda");
                   }}
                 >
-                  📸
+                  Escanear
                 </button>
               </div>
 
               <input
                 className="buscador"
-                placeholder="REGISTRO..."
+                placeholder="Registro"
                 value={busqueda.registro || ""}
                 onChange={(e) => {
                   setBusqueda({
@@ -246,47 +246,55 @@ export function VistaProductos({
                   <table className="tabla-excel">
                     <thead>
                       <tr>
-                        <th>Registro</th>
                         <th>Nombre</th>
-                        <th>Stock</th>
-                        <th>Fecha Vto.</th>
+                        <th>Registro</th>
+                        <th className="col-stock">Stock</th>
+                        <th>Vencimiento</th>
+                        <th>Estado</th>
                       </tr>
                     </thead>
                     <tbody>
                       {productosAMostrar
                         .filter((prod) => prod && typeof prod.nombre === "string")
-                        .map((prod) => (
-                          <tr
-                            key={prod.id || Math.random()}
-                            onClick={() => setProductoSeleccionado(prod)}
-                            className="fila-producto"
-                          >
-                            <td data-label="Registro">
-                              {prod.registro || "-"}
-                            </td>
-                            <td data-label="Nombre" className="col-nombre">
-                              {prod.nombre}
-                            </td>
-                            <td data-label="Cantidad / Stock" className="col-stock">
-                              {prod.stock ?? prod.cantidad ?? 0}
-                            </td>
-                            <td data-label="Fecha Vto.">
-                              {prod.fechaVto || prod.fecha || "-"}
-                            </td>
-                          </tr>
-                        ))}
+                        .map((prod) => {
+                          const fechaVto = prod.fechaVto || prod.fecha;
+                          const estado = estadoVencimiento(fechaVto);
+                          return (
+                            <tr
+                              key={prod.id || prod.nombre}
+                              onClick={() => setProductoSeleccionado(prod)}
+                              className="fila-producto"
+                            >
+                              <td data-label="Nombre" className="col-nombre">
+                                {prod.nombre}
+                              </td>
+                              <td data-label="Registro">{prod.registro || "-"}</td>
+                              <td data-label="Stock" className="col-stock">
+                                {prod.stock ?? prod.cantidad ?? 0}
+                              </td>
+                              <td data-label="Vencimiento">{formatearFecha(fechaVto)}</td>
+                              <td data-label="Estado">
+                                {estado ? (
+                                  <span className={`badge ${estado.clase}`}>{estado.texto}</span>
+                                ) : (
+                                  "-"
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
                     </tbody>
                   </table>
                 </div>
               ) : (
                 <p className="mensaje-vacio">
-                  No se encontraron productos en esta categoría.
+                  No hay productos que coincidan con la búsqueda.
                 </p>
               )
             ) : (
               <p className="mensaje-inicial">
-                Escribe algo para comenzar la búsqueda o presiona{" "}
-                <strong>"Mostrar lista"</strong>...
+                Escribí algo para buscar o tocá <strong>Mostrar lista</strong> para ver
+                todos los productos de esta categoría.
               </p>
             )}
           </div>
@@ -295,7 +303,7 @@ export function VistaProductos({
             className="btn-nuevo"
             onClick={() => setMostrandoFormularioNuevo(true)}
           >
-            + NUEVO PRODUCTO
+            Nuevo producto
           </button>
         </div>
       ) : (

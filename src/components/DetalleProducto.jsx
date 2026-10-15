@@ -8,6 +8,7 @@ import {
   eliminarFotoProducto,
 } from "../lib/fotos.js";
 import { CapturaFoto } from "./CapturaFoto.jsx";
+import { estadoVencimiento, formatearFecha } from "../utils/vencimiento.js";
 import "./componentes.css";
 
 export function DetalleProducto({
@@ -148,88 +149,53 @@ export function DetalleProducto({
     }
   };
 
+  const estado = estadoVencimiento(producto.fechaVto);
+
+  const filaCampo = (etiqueta, id, tipo, clave, cambio) => (
+    <div className="campo-edicion-fila">
+      <label className="label-campo" htmlFor={id}>{etiqueta}</label>
+      <input
+        id={id}
+        type={tipo}
+        className="input-flex"
+        value={datosEditados[clave]}
+        onChange={(e) => setDatosEditados({ ...datosEditados, [clave]: e.target.value })}
+      />
+      {cambio && (
+        <button
+          type="button"
+          className="btn-guardar btn-update-small"
+          onClick={() => actualizarCampoUnico(clave, datosEditados[clave])}
+          aria-label={`Guardar ${etiqueta.toLowerCase()}`}
+        >
+          Guardar
+        </button>
+      )}
+    </div>
+  );
+
   return (
     <div className="modal-overlay">
-      <div className="modal-content">
-        <h2>Detalle del Producto</h2>
+      <div className="modal-content detalle-producto">
+        <div className="detalle-encabezado">
+          <h2>{producto.nombre}</h2>
+          {estado && <span className={`badge ${estado.clase}`}>{estado.texto}</span>}
+        </div>
         <hr />
 
         <div className="infoPrincipal">
-          <p>
-            <strong>Nombre:</strong> {producto.nombre}
-          </p>
-
-          {/* REGISTRO */}
-          <div className="campo-edicion-fila" style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
-            <label style={{ minWidth: "80px" }}>Registro: </label>
-            <input
-              type="text"
-              className="buscador"
-              value={datosEditados.registro}
-              onChange={(e) => setDatosEditados({ ...datosEditados, registro: e.target.value })}
-              style={{ flex: 1 }}
-            />
-            {datosEditados.registro !== (producto.registro || "") && (
-              <button
-                className="btn-guardar"
-                onClick={() => actualizarCampoUnico("registro", datosEditados.registro)}
-                style={{ padding: "5px 10px", fontSize: "12px", cursor: "pointer" }}
-              >
-                ✓
-              </button>
-            )}
-          </div>
-
-          {/* STOCK */}
-          <div className="campo-edicion-fila" style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
-            <label style={{ minWidth: "80px" }}>Stock: </label>
-            <input
-              type="number"
-              className="buscador"
-              value={datosEditados.stock}
-              onChange={(e) => setDatosEditados({ ...datosEditados, stock: e.target.value })}
-              style={{ flex: 1 }}
-            />
-            {Number(datosEditados.stock) !== Number(producto.stock) && (
-              <button
-                className="btn-guardar"
-                onClick={() => actualizarCampoUnico("stock", datosEditados.stock)}
-                style={{ padding: "5px 10px", fontSize: "12px", cursor: "pointer" }}
-              >
-                ✓
-              </button>
-            )}
-          </div>
-
-          {/* VENCIMIENTO */}
-          <div className="campo-edicion-fila" style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
-            <label style={{ minWidth: "80px" }}>Vto: </label>
-            <input
-              type="date"
-              className="buscador"
-              value={datosEditados.fechaVto}
-              onChange={(e) => setDatosEditados({ ...datosEditados, fechaVto: e.target.value })}
-              style={{ flex: 1 }}
-            />
-            {datosEditados.fechaVto !== (producto.fechaVto || "") && (
-              <button
-                className="btn-guardar"
-                onClick={() => actualizarCampoUnico("fechaVto", datosEditados.fechaVto)}
-                style={{ padding: "5px 10px", fontSize: "12px", cursor: "pointer" }}
-              >
-                ✓
-              </button>
-            )}
-          </div>
+          {filaCampo("Registro", "det-registro", "text", "registro", datosEditados.registro !== (producto.registro || ""))}
+          {filaCampo("Stock", "det-stock", "number", "stock", Number(datosEditados.stock) !== Number(producto.stock))}
+          {filaCampo("Vencimiento", "det-vto", "date", "fechaVto", datosEditados.fechaVto !== (producto.fechaVto || ""))}
         </div>
 
-        {/* FOTO DEL ENVASE: se guarda aparte, no afecta a la lista ni al Excel */}
+        {/* La foto se guarda aparte: no afecta a la lista ni al Excel */}
         <div className="seccion-foto">
           <p className="foto-titulo">Foto del envase</p>
           {fotoUrl === undefined && <p className="foto-estado">Cargando foto...</p>}
           {fotoUrl === null && (
             <p className="foto-estado">
-              Sin foto. Agregá una para reconocerlo por cámara.
+              Sin foto. Agregá una para reconocer el producto con la cámara.
             </p>
           )}
           {fotoUrl && (
@@ -240,12 +206,8 @@ export function DetalleProducto({
             />
           )}
           <div className="foto-botones">
-            <button
-              type="button"
-              className="btn-guardar"
-              onClick={() => setCapturandoFoto(true)}
-            >
-              {fotoUrl ? "📷 Cambiar foto" : "📷 Agregar foto"}
+            <button type="button" onClick={() => setCapturandoFoto(true)}>
+              {fotoUrl ? "Cambiar foto" : "Agregar foto"}
             </button>
             {fotoUrl && (
               <button type="button" className="btn-quitar-foto" onClick={quitarFoto}>
@@ -255,36 +217,30 @@ export function DetalleProducto({
           </div>
         </div>
 
-        <div className="botones-accion" style={{ marginTop: "15px" }}>
-          <button
-            className="btn-eliminar"
-            onClick={handleEliminar}
-            style={{ background: "#100668", width: "100%", color: "white", padding: "10px", border: "none", borderRadius: "5px", cursor: "pointer" }}
-          >
-            ELIMINAR PRODUCTO
-          </button>
-        </div>
-
         {relacionados.length > 0 && (
-          <div className="seccion-relacionados" style={{ marginTop: "20px", borderTop: "1px solid #444", paddingTop: "10px" }}>
-            <p className="art-relacionado" style={{ fontWeight: "bold", marginBottom: "5px" }}>
-              Artículos relacionados:
-            </p>
-            {relacionados.map((rel) => (
-              <div key={rel.id || Math.random()} className="art-en-ventana">
-                • {rel.nombre} / Stock: {rel.stock} / VTO: {rel.fechaVto || "N/A"} / registro: {rel.registro}
-              </div>
-            ))}
+          <div className="seccion-relacionados">
+            <p className="art-relacionado">Artículos relacionados</p>
+            <ul className="relacionados-lista">
+              {relacionados.map((rel) => (
+                <li key={rel.id || rel.nombre} className="art-en-ventana">
+                  <strong>{rel.nombre}</strong>
+                  <span>
+                    Stock {rel.stock ?? 0} · Vto. {formatearFecha(rel.fechaVto)} · Reg. {rel.registro || "-"}
+                  </span>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
 
-        <button
-          className="btn-cerrar"
-          onClick={onClose}
-          style={{ marginTop: "20px", width: "100%", background: "#444", color: "white", padding: "10px", border: "none", borderRadius: "5px", cursor: "pointer" }}
-        >
-          CERRAR VENTANA
-        </button>
+        <div className="detalle-acciones">
+          <button type="button" className="btn-danger-soft" onClick={handleEliminar}>
+            Eliminar producto
+          </button>
+          <button type="button" className="btn-cerrar" onClick={onClose}>
+            Cerrar
+          </button>
+        </div>
       </div>
 
       {capturandoFoto && (

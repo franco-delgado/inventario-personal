@@ -1,13 +1,14 @@
 .reconocedor-contenido {
   width: 90%;
   max-width: 500px;
-  background: #1a1a1a;
+  background: #101a19;
+  border: 1px solid #223937;
   padding: 20px;
-  border-radius: 15px;
+  border-radius: var(--radius-lg);
 }
 
 .reconocedor-titulo {
-  color: white;
+  color: #e5f0ee;
   text-align: center;
   margin-bottom: 15px;
 }
@@ -30,21 +31,21 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  border: 2px solid #00ff00;
+  border: 2px solid #38c3b0;
   border-radius: 6px;
   box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.5);
   pointer-events: none;
 }
 
 .reconocedor-ayuda {
-  color: #ddd;
+  color: #b6c9c5;
   text-align: center;
   font-size: 0.9rem;
   margin-top: 12px;
 }
 
 .reconocedor-texto-leido {
-  color: #999;
+  color: #8ea5a1;
   text-align: center;
   font-size: 0.75rem;
   margin-top: 6px;
@@ -52,14 +53,14 @@
 }
 
 .reconocedor-error {
-  color: #ff8080;
+  color: #ff9b98;
   text-align: center;
   margin: 20px 0;
 }
 
 .reconocedor-resultado {
   background: rgba(255, 255, 255, 0.08);
-  border: 1px solid #00ff00;
+  border: 1px solid #38c3b0;
   border-radius: 10px;
   padding: 15px;
   margin-top: 15px;
@@ -89,7 +90,7 @@
 }
 
 .reconocedor-tip {
-  color: #888;
+  color: #8ea5a1;
   text-align: center;
   font-size: 0.75rem;
   margin-top: 6px;

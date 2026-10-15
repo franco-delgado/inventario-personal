@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { BrowserMultiFormatReader } from "@zxing/library";
+import "./Scanner.css";
 
 export function Scanner({ onScanSuccess, onClose }) {
   const videoRef = useRef(null);
@@ -59,78 +60,19 @@ export function Scanner({ onScanSuccess, onClose }) {
   }, [onScanSuccess]);
 
   return (
-    <div
-      className="modal-overlay"
-      style={{
-        background: "rgba(0,0,0,0.9)",
-        zIndex: 1000,
-        position: "fixed",
-        inset: 0,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <div
-        className="modal-content"
-        style={{
-          width: "90%",
-          maxWidth: "500px",
-          background: "#1a1a1a",
-          padding: "20px",
-          borderRadius: "15px",
-        }}
-      >
-        <h3
-          style={{ color: "white", textAlign: "center", marginBottom: "15px" }}
-        >
-          ESCANEANDO...
-        </h3>
+    <div className="modal-overlay camara-overlay">
+      <div className="modal-content camara-panel">
+        <h3 className="camara-titulo">Escaneando código de barras</h3>
 
-        <div
-          style={{
-            position: "relative",
-            overflow: "hidden",
-            borderRadius: "10px",
-            backgroundColor: "#000",
-            aspectRatio: "4/3",
-          }}
-        >
-          <video
-            ref={videoRef}
-            muted
-            playsInline
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              width: "70%",
-              height: "40%",
-              border: "2px solid #00ff00",
-              boxShadow: "0 0 0 4000px rgba(0,0,0,0.5)",
-              pointerEvents: "none",
-            }}
-          ></div>
+        <div className="scanner-visor">
+          <video ref={videoRef} muted playsInline className="scanner-video" />
+          <div className="scanner-marco"></div>
         </div>
 
-        <button
-          onClick={onClose}
-          style={{
-            marginTop: "20px",
-            width: "100%",
-            padding: "15px",
-            background: "#ff4444",
-            color: "white",
-            border: "none",
-            borderRadius: "8px",
-            fontWeight: "bold",
-          }}
-        >
-          CERRAR
+        <p className="camara-ayuda">Apuntá al código de barras dentro del recuadro.</p>
+
+        <button type="button" onClick={onClose} className="btn-cerrar">
+          Cerrar
         </button>
       </div>
     </div>

@@ -258,7 +258,7 @@ export function ReconocedorProducto({ onClose, onVerFicha }) {
     <div className="modal-overlay" style={{ zIndex: 1000 }}>
       <div className="reconocedor-contenido">
         <h3 className="reconocedor-titulo">
-          {estado === "encontrado" ? "✅ PRODUCTO ENCONTRADO" : "📷 COMPARANDO CON FOTOS..."}
+          {estado === "encontrado" ? "Producto encontrado" : "Comparando con las fotos..."}
         </h3>
 
         {estado === "error" ? (
@@ -349,7 +349,7 @@ export function ReconocedorProducto({ onClose, onVerFicha }) {
 
             <div className="reconocedor-botones">
               {onVerFicha && (
-                <button className="btn-guardar" onClick={() => onVerFicha(resultado)}>
+                <button className="btn-primary" onClick={() => onVerFicha(resultado)}>
                   Ver ficha completa
                 </button>
               )}
@@ -360,8 +360,8 @@ export function ReconocedorProducto({ onClose, onVerFicha }) {
           </div>
         )}
 
-        <button className="btn-cerrar" onClick={onClose} style={{ marginTop: 15 }}>
-          CERRAR
+        <button className="btn-cerrar" onClick={onClose}>
+          Cerrar
         </button>
       </div>
     </div>
