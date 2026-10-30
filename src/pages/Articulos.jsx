@@ -210,6 +210,26 @@ function Articulos() {
     }
   };
 
+  // --- IR AL ARTÍCULO DESDE LA LISTA DE VENCIMIENTOS ---
+  // Entra a la categoría del producto, filtra la lista por su nombre y abre su ficha.
+  const abrirArticulo = (p) => {
+    if (!p.categoria) {
+      alert("Este producto no tiene categoría asignada, no se puede abrir.");
+      return;
+    }
+    setBusqueda({ nombre: p.nombre || "", cb: "", registro: "", fecha: "" });
+    setCategoriaSeleccionada(p.categoria);
+    setProductoSeleccionado(p);
+  };
+
+  // Al volver a las categorías, refresca la lista de vencimientos
+  // (por si se editó el stock, la fecha o se eliminó el producto)
+  useEffect(() => {
+    if (!categoriaSeleccionada && mostrandoVencimientos) {
+      buscarVencimientos();
+    }
+  }, [categoriaSeleccionada]);
+
   // --- GENERAR EXCEL COMPLETO INDEPENDIENTE DE LA VISTA ---
   const generarExcelDirecto = async () => {
     if (!usuario) return;
@@ -329,12 +349,32 @@ function Articulos() {
                   {productosVencimiento.map((p) => {
                     const estado = estadoVencimiento(p.fechaVto);
                     return (
-                      <li key={p.id}>
-                        <span className="vto-nombre">{p.nombre}</span>
-                        <span className="vto-detalle">
-                          Vence {formatearFecha(p.fechaVto)} · Registro {p.registro || "-"}
-                        </span>
-                        {estado && <span className={`badge ${estado.clase}`}>{estado.texto}</span>}
+                      <li
+                        key={p.id}
+                        className="vto-item"
+                        role="button"
+                        tabIndex={0}
+                        title="Abrir artículo"
+                        onClick={() => abrirArticulo(p)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            abrirArticulo(p);
+                          }
+                        }}
+                      >
+                        <div className="vto-fila-principal">
+                          <span className="vto-nombre">{p.nombre}</span>
+                          {estado && <span className={`badge ${estado.clase}`}>{estado.texto}</span>}
+                        </div>
+                        <dl className="vto-datos">
+                          <div><dt>Vence</dt><dd>{formatearFecha(p.fechaVto)}</dd></div>
+                          <div><dt>Registro</dt><dd>{p.registro || "-"}</dd></div>
+                          <div><dt>Stock</dt><dd>{p.stock ?? 0}</dd></div>
+                          <div><dt>Código</dt><dd>{p.cb || "-"}</dd></div>
+                          <div><dt>Contenido</dt><dd>{p.contenido || "-"}</dd></div>
+                          <div><dt>Categoría</dt><dd>{p.categoria || "-"}</dd></div>
+                        </dl>
                       </li>
                     );
                   })}

@@ -125,6 +125,49 @@
   font-size: 0.88rem;
 }
 
+.lista-vencimientos li.vto-item {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.lista-vencimientos li.vto-item:hover,
+.lista-vencimientos li.vto-item:focus-visible {
+  border-color: var(--primary);
+  outline: none;
+}
+
+.vto-fila-principal {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 14px;
+}
+
+.vto-datos {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 6px 16px;
+}
+
+.vto-datos dt {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+}
+
+.vto-datos dd {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
 .mensaje-vacio-vto {
   margin: 14px 0 0;
   color: var(--text-muted);
