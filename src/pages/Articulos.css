@@ -183,3 +183,21 @@
     min-height: 64px;
   }
 }
+
+/* --- Impresión de etiquetas de precio --- */
+.vto-imprimir { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border, #ccc); }
+.vto-imprimir h4 { margin: 0 0 .6rem; }
+.vto-imprimir-desc { display: flex; align-items: center; gap: .5rem; margin-bottom: .75rem; }
+.vto-imprimir-desc input { width: 6rem; }
+.vto-imprimir-lista { list-style: none; padding: 0; margin: 0 0 .75rem; display: flex; flex-direction: column; gap: .5rem; }
+.vto-imprimir-lista li { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.vto-imprimir-nombre { flex: 1 1 12rem; font-weight: 600; }
+.vto-imprimir-lista input { width: 10rem; }
+.vto-imprimir-final { font-weight: 700; }
+.vto-imprimir-config { display: flex; flex-wrap: wrap; gap: .75rem; margin-bottom: .75rem; }
+.vto-imprimir-config label { display: flex; flex-direction: column; gap: .2rem; font-size: .85rem; }
+.vto-imprimir-config input { width: 7rem; }
+.vto-imprimir-todos { display: flex; align-items: center; gap: .4rem; margin-bottom: .5rem; }
+.vto-imprimir-nombre { cursor: pointer; }
+.vto-imprimir-lista li:not(.sel) { opacity: .7; }
+.vto-imprimir-lista input.vto-imprimir-pct { width: 5.5rem; }

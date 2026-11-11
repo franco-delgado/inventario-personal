@@ -7,6 +7,7 @@ import { exportarVencimientosAExcel } from "../utils/exportarExcel.js";
 import { useInventario } from "../hooks/useInventario.js"; // 👈 Importación del Hook
 import { guardarFotoProducto } from "../lib/fotos.js";
 import { estadoVencimiento, formatearFecha } from "../utils/vencimiento.js";
+import { imprimirEtiquetas, parsearPrecio, formatearPrecio } from "../utils/imprimirEtiquetas.js";
 import "./Articulos.css";
 
 function Articulos() {
@@ -118,6 +119,28 @@ function Articulos() {
     mes: (new Date().getMonth() + 1).toString().padStart(2, "0"),
   });
 
+  // Impresión de etiquetas de precio (precios y descuento se cargan a mano)
+  const [preciosEtiqueta, setPreciosEtiqueta] = useState({}); // { [id]: "texto" }
+  const [descuentoEtiqueta, setDescuentoEtiqueta] = useState(""); // descuento general
+  const [descuentosEtiqueta, setDescuentosEtiqueta] = useState({}); // { [id]: "texto" } individual
+  const [seleccionEtiqueta, setSeleccionEtiqueta] = useState({}); // { [id]: true }
+  const [tamanoEtiqueta, setTamanoEtiqueta] = useState(() => {
+    try {
+      const g = JSON.parse(localStorage.getItem("tamanoEtiqueta"));
+      if (g && g.ancho && g.alto) return g;
+    } catch {}
+    return { ancho: "60", alto: "40" };
+  });
+  const cambiarTamano = (nuevo) => {
+    setTamanoEtiqueta(nuevo);
+    try { localStorage.setItem("tamanoEtiqueta", JSON.stringify(nuevo)); } catch {}
+  };
+  const descuentoDe = (id) => {
+    const txt = descuentosEtiqueta[id];
+    const v = parseFloat(String(txt !== undefined && txt !== "" ? txt : descuentoEtiqueta).replace(",", "."));
+    return v;
+  };
+
   const [productoSeleccionado, setProductoSeleccionado] = useState(null);
   const [mostrandoFormularioNuevo, setMostrandoFormularioNuevo] = useState(false);
   const [scaneando, setScaneando] = useState(false);
@@ -208,6 +231,34 @@ function Articulos() {
     } catch (err) {
       alert("Error al buscar vencimientos: " + err.message);
     }
+  };
+
+  // --- IMPRIMIR ETIQUETAS DE PRECIO ---
+  const imprimirPrecios = () => {
+    const ancho = parseFloat(String(tamanoEtiqueta.ancho).replace(",", "."));
+    const alto = parseFloat(String(tamanoEtiqueta.alto).replace(",", "."));
+    if (!(ancho >= 20) || !(alto >= 15)) {
+      return alert("Ingresá un tamaño de etiqueta válido en mm (mínimo 20 × 15).");
+    }
+
+    const elegidos = productosVencimiento.filter((p) => seleccionEtiqueta[p.id]);
+    if (elegidos.length === 0) {
+      return alert("Marcá al menos un producto para imprimir.");
+    }
+
+    const items = [];
+    for (const p of elegidos) {
+      const precio = parsearPrecio(preciosEtiqueta[p.id]);
+      const descuento = descuentoDe(p.id);
+      if (isNaN(precio) || precio <= 0) {
+        return alert(`Falta el precio de "${p.nombre}".`);
+      }
+      if (isNaN(descuento) || descuento < 0 || descuento >= 100) {
+        return alert(`Descuento inválido (0 a 99) en "${p.nombre}".`);
+      }
+      items.push({ ...p, precio, descuento });
+    }
+    imprimirEtiquetas(items, { ancho, alto });
   };
 
   // --- IR AL ARTÍCULO DESDE LA LISTA DE VENCIMIENTOS ---
@@ -345,6 +396,7 @@ function Articulos() {
               </div>
 
               {productosVencimiento.length > 0 ? (
+                <>
                 <ul className="lista-vencimientos">
                   {productosVencimiento.map((p) => {
                     const estado = estadoVencimiento(p.fechaVto);
@@ -379,6 +431,118 @@ function Articulos() {
                     );
                   })}
                 </ul>
+
+                <div className="vto-imprimir">
+                  <h4>Imprimir etiquetas de precio</h4>
+
+                  <div className="vto-imprimir-config">
+                    <label>
+                      Ancho (mm)
+                      <input
+                        type="number"
+                        min="20"
+                        step="any"
+                        inputMode="decimal"
+                        value={tamanoEtiqueta.ancho}
+                        onChange={(e) => cambiarTamano({ ...tamanoEtiqueta, ancho: e.target.value })}
+                      />
+                    </label>
+                    <label>
+                      Alto (mm)
+                      <input
+                        type="number"
+                        min="15"
+                        step="any"
+                        inputMode="decimal"
+                        value={tamanoEtiqueta.alto}
+                        onChange={(e) => cambiarTamano({ ...tamanoEtiqueta, alto: e.target.value })}
+                      />
+                    </label>
+                    <label>
+                      Descuento general (%)
+                      <input
+                        type="number"
+                        min="0"
+                        max="99"
+                        step="any"
+                        inputMode="decimal"
+                        value={descuentoEtiqueta}
+                        onChange={(e) => setDescuentoEtiqueta(e.target.value)}
+                      />
+                    </label>
+                  </div>
+
+                  <label className="vto-imprimir-todos">
+                    <input
+                      type="checkbox"
+                      checked={
+                        productosVencimiento.length > 0 &&
+                        productosVencimiento.every((p) => seleccionEtiqueta[p.id])
+                      }
+                      onChange={(e) => {
+                        const nuevo = {};
+                        if (e.target.checked) productosVencimiento.forEach((p) => (nuevo[p.id] = true));
+                        setSeleccionEtiqueta(nuevo);
+                      }}
+                    />
+                    Seleccionar todos
+                  </label>
+
+                  <ul className="vto-imprimir-lista">
+                    {productosVencimiento.map((p) => {
+                      const base = parsearPrecio(preciosEtiqueta[p.id]);
+                      const pct = descuentoDe(p.id);
+                      const final =
+                        !isNaN(base) && !isNaN(pct)
+                          ? formatearPrecio(Math.round(base * (1 - pct / 100) * 100) / 100)
+                          : null;
+                      return (
+                        <li key={p.id} className={seleccionEtiqueta[p.id] ? "sel" : ""}>
+                          <label className="vto-imprimir-nombre">
+                            <input
+                              type="checkbox"
+                              checked={!!seleccionEtiqueta[p.id]}
+                              onChange={(e) =>
+                                setSeleccionEtiqueta({ ...seleccionEtiqueta, [p.id]: e.target.checked })
+                              }
+                            />{" "}
+                            {p.nombre}
+                          </label>
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            placeholder="Precio sin desc."
+                            aria-label={`Precio sin descuento de ${p.nombre}`}
+                            value={preciosEtiqueta[p.id] || ""}
+                            onChange={(e) =>
+                              setPreciosEtiqueta({ ...preciosEtiqueta, [p.id]: e.target.value })
+                            }
+                          />
+                          <input
+                            type="number"
+                            min="0"
+                            max="99"
+                            step="any"
+                            inputMode="decimal"
+                            className="vto-imprimir-pct"
+                            placeholder={descuentoEtiqueta ? `${descuentoEtiqueta} %` : "% desc."}
+                            aria-label={`Descuento (%) de ${p.nombre}`}
+                            value={descuentosEtiqueta[p.id] || ""}
+                            onChange={(e) =>
+                              setDescuentosEtiqueta({ ...descuentosEtiqueta, [p.id]: e.target.value })
+                            }
+                          />
+                          {final && <span className="vto-imprimir-final">→ {final}</span>}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  <button type="button" className="btn-primary" onClick={imprimirPrecios}>
+                    Imprimir seleccionados (
+                    {productosVencimiento.filter((p) => seleccionEtiqueta[p.id]).length})
+                  </button>
+                </div>
+                </>
               ) : (
                 <p className="mensaje-vacio-vto">
                   No hay productos que venzan en esta fecha.
