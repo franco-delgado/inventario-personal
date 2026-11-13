@@ -127,9 +127,9 @@ function Articulos() {
   const [tamanoEtiqueta, setTamanoEtiqueta] = useState(() => {
     try {
       const g = JSON.parse(localStorage.getItem("tamanoEtiqueta"));
-      if (g && g.ancho && g.alto) return g;
+      if (g && g.alto) return { alto: g.alto };
     } catch {}
-    return { ancho: "60", alto: "40" };
+    return { alto: "40" };
   });
   const cambiarTamano = (nuevo) => {
     setTamanoEtiqueta(nuevo);
@@ -235,10 +235,9 @@ function Articulos() {
 
   // --- IMPRIMIR ETIQUETAS DE PRECIO ---
   const imprimirPrecios = () => {
-    const ancho = parseFloat(String(tamanoEtiqueta.ancho).replace(",", "."));
     const alto = parseFloat(String(tamanoEtiqueta.alto).replace(",", "."));
-    if (!(ancho >= 20) || !(alto >= 15)) {
-      return alert("Ingresá un tamaño de etiqueta válido en mm (mínimo 20 × 15).");
+    if (!(alto >= 15) || alto > 297) {
+      return alert("Ingresá un alto de etiqueta válido en mm (entre 15 y 297).");
     }
 
     const elegidos = productosVencimiento.filter((p) => seleccionEtiqueta[p.id]);
@@ -258,7 +257,7 @@ function Articulos() {
       }
       items.push({ ...p, precio, descuento });
     }
-    imprimirEtiquetas(items, { ancho, alto });
+    imprimirEtiquetas(items, { alto });
   };
 
   // --- IR AL ARTÍCULO DESDE LA LISTA DE VENCIMIENTOS ---
@@ -437,17 +436,6 @@ function Articulos() {
 
                   <div className="vto-imprimir-config">
                     <label>
-                      Ancho (mm)
-                      <input
-                        type="number"
-                        min="20"
-                        step="any"
-                        inputMode="decimal"
-                        value={tamanoEtiqueta.ancho}
-                        onChange={(e) => cambiarTamano({ ...tamanoEtiqueta, ancho: e.target.value })}
-                      />
-                    </label>
-                    <label>
                       Alto (mm)
                       <input
                         type="number"
@@ -455,7 +443,7 @@ function Articulos() {
                         step="any"
                         inputMode="decimal"
                         value={tamanoEtiqueta.alto}
-                        onChange={(e) => cambiarTamano({ ...tamanoEtiqueta, alto: e.target.value })}
+                        onChange={(e) => cambiarTamano({ alto: e.target.value })}
                       />
                     </label>
                     <label>
