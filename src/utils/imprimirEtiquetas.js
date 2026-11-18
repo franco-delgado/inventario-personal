@@ -1,14 +1,27 @@
 import { codigoBarrasSVG } from "./barcode.js";
 
-// Hoja A4 vertical: 210 x 297 mm. Las etiquetas se imprimen 4 por fila, desde arriba a la izquierda.
+// Hoja A4 vertical: 210 x 297 mm. Las etiquetas se imprimen de izquierda a derecha y de arriba hacia abajo.
 export const A4_ANCHO_MM = 210;
 export const A4_ALTO_MM = 297;
-export const ETIQUETAS_POR_FILA = 4;
-export const ETIQUETA_ANCHO_MM = A4_ANCHO_MM / ETIQUETAS_POR_FILA; // 52,5 mm
+// Tamaño por defecto: 4 etiquetas por fila (210 / 4 = 52,5 mm de ancho) y 40 mm de alto
+export const ETIQUETA_ANCHO_MM = A4_ANCHO_MM / 4; // 52,5 mm
 export const ETIQUETA_ALTO_MM = 40;
-// Base de referencia (60 x 40) para escalar tipografías
-const BASE_ANCHO_MM = 60;
-const BASE_ALTO_MM = 40;
+export const ETIQUETA_ANCHO_MIN_MM = 25;
+export const ETIQUETA_ALTO_MIN_MM = 15;
+
+// Margen interno de seguridad (mm). Las impresoras no imprimen en los bordes de la hoja
+// (zona no imprimible de ~3-4 mm), así que el contenido se deja corrido hacia adentro
+// para que no se recorte el precio anterior (arriba) ni los textos de los costados.
+const MARGEN_SUP_MM = 6;
+const MARGEN_INF_MM = 3;
+const MARGEN_LAT_MM = 4;
+// Área útil de la etiqueta de referencia (60 x 40) para escalar tipografías
+const BASE_UTIL_ANCHO_MM = 60 - 2 * 3;
+const BASE_UTIL_ALTO_MM = 40 - 6.5;
+
+/** Cuántas etiquetas de ese ancho (mm) entran en una fila de la hoja A4. */
+export const etiquetasPorFila = (ancho) =>
+  Math.max(1, Math.floor(A4_ANCHO_MM / (Number(ancho) || ETIQUETA_ANCHO_MM) + 1e-6));
 
 const esc = (t) =>
   String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -35,17 +48,21 @@ const fechaImpresion = () => {
 
 /**
  * items: [{ nombre, registro, cb, contenido, precio (sin descuento), descuento (% de ese artículo) }]
- * tamano: { alto } en mm. El ancho es fijo (A4 / 4) para que entren 4 etiquetas por fila.
+ * tamano: { ancho, alto } en mm. Por defecto 52,5 x 40 (4 etiquetas por fila en A4).
+ * Devuelve el HTML completo de la impresión (separado para poder probarlo).
  */
-export function imprimirEtiquetas(items, tamano = {}) {
-  const W = ETIQUETA_ANCHO_MM;
+export function construirHtmlEtiquetas(items, tamano = {}) {
+  const W = Math.min(Number(tamano.ancho) || ETIQUETA_ANCHO_MM, A4_ANCHO_MM);
   const H = Math.min(Number(tamano.alto) || ETIQUETA_ALTO_MM, A4_ALTO_MM);
-  // Factor para escalar textos y código de barras según el tamaño elegido
-  const k = Math.max(0.4, Math.min(W / BASE_ANCHO_MM, H / BASE_ALTO_MM));
+  // Factor para escalar textos y código de barras según el área útil disponible
+  const k = Math.max(
+    0.3,
+    Math.min((W - 2 * MARGEN_LAT_MM) / BASE_UTIL_ANCHO_MM, (H - MARGEN_SUP_MM - MARGEN_INF_MM) / BASE_UTIL_ALTO_MM)
+  );
   const hoy = fechaImpresion();
 
-  const filasPorHoja = Math.max(1, Math.floor(A4_ALTO_MM / H));
-  const porHoja = filasPorHoja * ETIQUETAS_POR_FILA;
+  const filasPorHoja = Math.max(1, Math.floor(A4_ALTO_MM / H + 1e-6));
+  const porHoja = filasPorHoja * etiquetasPorFila(W);
 
   const etiquetasHtml = items
     .map((p) => {
@@ -86,17 +103,22 @@ export function imprimirEtiquetas(items, tamano = {}) {
   .hoja:last-child { page-break-after: auto; break-after: auto; }
   .etiqueta {
     width: ${W}mm; height: ${H}mm; flex: 0 0 ${W}mm;
-    padding: ${2 * k}mm ${3 * k}mm; display: flex; flex-direction: column; align-items: center;
+    padding: ${MARGEN_SUP_MM}mm ${MARGEN_LAT_MM}mm ${MARGEN_INF_MM}mm; display: flex; flex-direction: column; align-items: center;
     justify-content: space-between; overflow: hidden;
     text-align: center; outline: 0.1mm dashed #999; outline-offset: -0.1mm;
   }
-  .sin-desc { font-size: ${7 * k}pt; }
+  .sin-desc { font-size: ${7 * k}pt; line-height: 1.2; white-space: nowrap; }
   .precio { font-size: ${22 * k}pt; font-weight: 800; line-height: 1; }
   .nombre { font-size: ${7.5 * k}pt; line-height: 1.1; max-height: 2.3em; overflow: hidden; }
   .contenido { font-size: ${6.5 * k}pt; }
   .barras { width: 85%; height: ${9 * k}mm; }
-  .pie { width: 100%; display: flex; justify-content: space-between; font-size: ${6 * k}pt; }
+  .pie { width: 100%; display: flex; justify-content: space-between; gap: 1mm; white-space: nowrap; font-size: ${6 * k}pt; }
 </style></head><body>${etiquetas}</body></html>`;
+  return html;
+}
+
+export function imprimirEtiquetas(items, tamano = {}) {
+  const html = construirHtmlEtiquetas(items, tamano);
 
   const iframe = document.createElement("iframe");
   iframe.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;";

@@ -150,7 +150,8 @@
 .vto-datos {
   margin: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(140px, 12px));
+  height: 120px;
   gap: 6px 16px;
 }
 
@@ -197,6 +198,7 @@
 .vto-imprimir-config { display: flex; flex-wrap: wrap; gap: .75rem; margin-bottom: .75rem; }
 .vto-imprimir-config label { display: flex; flex-direction: column; gap: .2rem; font-size: .85rem; }
 .vto-imprimir-config input { width: 7rem; }
+.vto-imprimir-ayuda { color: var(--text-muted, #666); min-height: 1em; }
 .vto-imprimir-todos { display: flex; align-items: center; gap: .4rem; margin-bottom: .5rem; }
 .vto-imprimir-nombre { cursor: pointer; }
 .vto-imprimir-lista li:not(.sel) { opacity: .7; }

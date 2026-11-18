@@ -7,7 +7,18 @@ import { exportarVencimientosAExcel } from "../utils/exportarExcel.js";
 import { useInventario } from "../hooks/useInventario.js"; // 👈 Importación del Hook
 import { guardarFotoProducto } from "../lib/fotos.js";
 import { estadoVencimiento, formatearFecha } from "../utils/vencimiento.js";
-import { imprimirEtiquetas, parsearPrecio, formatearPrecio } from "../utils/imprimirEtiquetas.js";
+import {
+  imprimirEtiquetas,
+  parsearPrecio,
+  formatearPrecio,
+  etiquetasPorFila,
+  ETIQUETA_ANCHO_MM,
+  ETIQUETA_ALTO_MM,
+  ETIQUETA_ANCHO_MIN_MM,
+  ETIQUETA_ALTO_MIN_MM,
+  A4_ANCHO_MM,
+  A4_ALTO_MM,
+} from "../utils/imprimirEtiquetas.js";
 import "./Articulos.css";
 
 function Articulos() {
@@ -127,9 +138,14 @@ function Articulos() {
   const [tamanoEtiqueta, setTamanoEtiqueta] = useState(() => {
     try {
       const g = JSON.parse(localStorage.getItem("tamanoEtiqueta"));
-      if (g && g.alto) return { alto: g.alto };
+      if (g && (g.alto || g.ancho)) {
+        return {
+          ancho: g.ancho || String(ETIQUETA_ANCHO_MM),
+          alto: g.alto || String(ETIQUETA_ALTO_MM),
+        };
+      }
     } catch {}
-    return { alto: "40" };
+    return { ancho: String(ETIQUETA_ANCHO_MM), alto: String(ETIQUETA_ALTO_MM) };
   });
   const cambiarTamano = (nuevo) => {
     setTamanoEtiqueta(nuevo);
@@ -235,9 +251,13 @@ function Articulos() {
 
   // --- IMPRIMIR ETIQUETAS DE PRECIO ---
   const imprimirPrecios = () => {
+    const ancho = parseFloat(String(tamanoEtiqueta.ancho).replace(",", "."));
+    if (!(ancho >= ETIQUETA_ANCHO_MIN_MM) || ancho > A4_ANCHO_MM) {
+      return alert(`Ingresá un ancho de etiqueta válido en mm (entre ${ETIQUETA_ANCHO_MIN_MM} y ${A4_ANCHO_MM}).`);
+    }
     const alto = parseFloat(String(tamanoEtiqueta.alto).replace(",", "."));
-    if (!(alto >= 15) || alto > 297) {
-      return alert("Ingresá un alto de etiqueta válido en mm (entre 15 y 297).");
+    if (!(alto >= ETIQUETA_ALTO_MIN_MM) || alto > A4_ALTO_MM) {
+      return alert(`Ingresá un alto de etiqueta válido en mm (entre ${ETIQUETA_ALTO_MIN_MM} y ${A4_ALTO_MM}).`);
     }
 
     const elegidos = productosVencimiento.filter((p) => seleccionEtiqueta[p.id]);
@@ -257,7 +277,7 @@ function Articulos() {
       }
       items.push({ ...p, precio, descuento });
     }
-    imprimirEtiquetas(items, { alto });
+    imprimirEtiquetas(items, { ancho, alto });
   };
 
   // --- IR AL ARTÍCULO DESDE LA LISTA DE VENCIMIENTOS ---
@@ -436,14 +456,35 @@ function Articulos() {
 
                   <div className="vto-imprimir-config">
                     <label>
+                      Ancho (mm)
+                      <input
+                        type="number"
+                        min={ETIQUETA_ANCHO_MIN_MM}
+                        max={A4_ANCHO_MM}
+                        step="any"
+                        inputMode="decimal"
+                        value={tamanoEtiqueta.ancho}
+                        onChange={(e) => cambiarTamano({ ...tamanoEtiqueta, ancho: e.target.value })}
+                      />
+                      <small className="vto-imprimir-ayuda">
+                        {(() => {
+                          const a = parseFloat(String(tamanoEtiqueta.ancho).replace(",", "."));
+                          return a >= ETIQUETA_ANCHO_MIN_MM && a <= A4_ANCHO_MM
+                            ? `${etiquetasPorFila(a)} por fila`
+                            : "";
+                        })()}
+                      </small>
+                    </label>
+                    <label>
                       Alto (mm)
                       <input
                         type="number"
-                        min="15"
+                        min={ETIQUETA_ALTO_MIN_MM}
+                        max={A4_ALTO_MM}
                         step="any"
                         inputMode="decimal"
                         value={tamanoEtiqueta.alto}
-                        onChange={(e) => cambiarTamano({ alto: e.target.value })}
+                        onChange={(e) => cambiarTamano({ ...tamanoEtiqueta, alto: e.target.value })}
                       />
                     </label>
                     <label>
